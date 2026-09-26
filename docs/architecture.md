@@ -59,16 +59,22 @@ finanzas_personales/
 │   │   ├── migrations/
 │   │   ├── seed.ts
 │   │   └── schema.prisma
+│   ├── prisma7.config.ts
 │   ├── src/
-│   │   ├── dashboard/
-│   │   ├── transactions/
-│   │   ├── categories/
-│   │   ├── accounts/
-│   │   ├── prisma/
+│   │   ├── categories/      (hecho)
+│   │   ├── health/          (hecho)
+│   │   ├── common/
+│   │   │   ├── dto/         (PaginationQueryDto)
+│   │   │   └── filters/     (PrismaExceptionFilter)
+│   │   ├── config/          (validacion de entorno)
+│   │   ├── prisma/          (PrismaService / PrismaModule)
+│   │   ├── accounts/        (pendiente)
+│   │   ├── transactions/    (pendiente)
 │   │   ├── app.module.ts
+│   │   ├── app.setup.ts     (prefijo, pipe, filtro y Swagger)
 │   │   └── main.ts
 │   ├── test/
-│   ├── .env.example
+│   ├── .env                 (local, no versionado)
 │   └── package.json
 ├── frontend/
 │   ├── src/
@@ -392,12 +398,14 @@ El trabajo se organiza en rebanadas verticales (backend + frontend + OpenClaw) s
 
 ### Rebanada 1: nucleo backend
 
-- Configurar Prisma (hecho), migracion (hecho) y seed (hecho).
+- Configurar Prisma, migracion y seed (hecho).
 - Implementar `PrismaService` y `PrismaModule` (hecho).
 - Configurar `ValidationPipe` global y prefijo `/api/v1` (hecho).
-- Implementar `health`, `accounts`, `categories` y `transactions`.
-- TDD de reglas de negocio y validaciones.
-- Añadir Swagger.
+- `health` (hecho).
+- `categories`: CRUD, archivar/restaurar, paginacion, filtro de errores y tests (hecho).
+- Swagger (hecho).
+- `accounts` (pendiente).
+- `transactions` con TDD, filtros y paginacion (pendiente).
 
 ### Rebanada 2: frontend usable (Nivel 1)
 
