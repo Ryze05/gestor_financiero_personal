@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Currency {
+  EUR
+  USD
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionSource {
+  WEB
+  OPENCLAW
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+  BOTH
+}
+
+model Account {
+  id             String   @id @default(uuid())
+  name           String   @unique
+  initialBalance Decimal  @db.Decimal(14, 2)
+  currency       Currency
+  isArchived     Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  transactions         Transaction[] @relation("AccountTransactions")
+  sourceTransfers      Transfer[]    @relation("SourceAccount")
+  destinationTransfers Transfer[]    @relation("DestinationAccount")
+}
+
+model Category {
+  id         String       @id @default(uuid())
+  name       String       @unique
+  type       CategoryType
+  color      String?
+  isArchived Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  transactions Transaction[]
+}
+
+model Transaction {
+  id            String            @id @default(uuid())
+  type          TransactionType
+  amount        Decimal           @db.Decimal(14, 2)
+  currency      Currency
+  accountAmount Decimal           @db.Decimal(14, 2)
+  exchangeRate  Decimal           @db.Decimal(18, 8)
+  concept       String            @db.VarChar(150)
+  date          DateTime          @db.Date
+  notes         String?           @db.VarChar(500)
+  source        TransactionSource
+  externalId    String?           @unique
+  transferId    String?
+  accountId     String
+  categoryId    String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  account  Account      @relation("AccountTransactions", fields: [accountId], references: [id], onDelete: Restrict)
+  category Category?    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  transfer Transfer?   @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  @@index([accountId, date])
+  @@index([categoryId, date])
+  @@index([date])
+  @@index([transferId])
+}
+
+model Transfer {
+  id                   String   @id @default(uuid())
+  amount               Decimal  @db.Decimal(14, 2)
+  sourceCurrency       Currency
+  destinationAmount    Decimal  @db.Decimal(14, 2)
+  destinationCurrency  Currency
+  exchangeRate         Decimal  @db.Decimal(18, 8)
+  date                 DateTime @db.Date
+  concept              String?  @db.VarChar(150)
+  sourceAccountId      String
+  destinationAccountId String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  sourceAccount      Account       @relation("SourceAccount", fields: [sourceAccountId], references: [id], onDelete: Restrict)
+  destinationAccount Account       @relation("DestinationAccount", fields: [destinationAccountId], references: [id], onDelete: Restrict)
+  transactions       Transaction[]
+
+  @@index([sourceAccountId, date])
+  @@index([destinationAccountId, date])
+  @@index([date])
+}
