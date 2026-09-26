@@ -41,13 +41,14 @@ NestJS sera la unica capa autorizada para aplicar reglas de negocio y escribir e
 - PostgreSQL como base de datos.
 - `class-validator` y `class-transformer` para validar DTOs.
 - Swagger para documentar la API.
-- Jest y Supertest para tests.
+- Vitest y Supertest para tests.
+- `@nestjs/swagger` para la documentacion OpenAPI.
 
 ### Infraestructura
 
 - Docker Compose para PostgreSQL.
 - Node.js LTS.
-- npm como gestor inicial de paquetes.
+- `pnpm` como gestor de paquetes.
 - Variables de entorno mediante archivos `.env` no versionados.
 
 ## 3. Estructura del repositorio
@@ -83,7 +84,7 @@ finanzas_personales/
 │   │   ├── components/
 │   │   ├── lib/
 │   │   └── types/
-│   ├── .env.example
+│   ├── .env.local           (local, no versionado)
 │   └── package.json
 ├── openclaw/
 │   ├── SKILL.md
