@@ -62,8 +62,11 @@ pnpm prisma generate
 
 ## API Conventions
 
-- Global route prefix is `/api/v1` (set in `src/main.ts`).
-- A global `ValidationPipe` is configured with `whitelist`, `forbidNonWhitelisted`, `transform` and `enableImplicitConversion`. DTOs must use `class-validator` decorators.
+- `src/app.setup.ts` centralizes the `/api/v1` prefix, the global `ValidationPipe`, the `PrismaExceptionFilter` and Swagger. `main.ts` and the e2e tests both call `setupApp(app)`.
+- Swagger UI: `http://localhost:3001/docs`; OpenAPI JSON at `/docs-json`.
+- Global `ValidationPipe` uses `whitelist`, `forbidNonWhitelisted`, `transform` and `enableImplicitConversion`. DTOs must use `class-validator` decorators.
+- List endpoints are paginated with `PaginationQueryDto` and return `{ data, total, page, limit }`.
+- `PrismaExceptionFilter` maps `P2025` to 404, `P2002` to 409, anything else to 500.
 - Money is handled with Prisma `Decimal`, never JavaScript `number`.
 - `PrismaService`/`PrismaModule` are global; inject `PrismaService` to access the database.
 - Implementation follows the vertical-slice roadmap in `docs/specs.md` (section 1.3) and `docs/architecture.md` (section 10).

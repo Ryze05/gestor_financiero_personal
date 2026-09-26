@@ -213,10 +213,41 @@ Parametros de `GET /api/v1/transactions` en el MVP:
 
 - `GET /api/v1/categories`
 - `POST /api/v1/categories`
+- `GET /api/v1/categories/:id`
 - `PATCH /api/v1/categories/:id`
-- `DELETE /api/v1/categories/:id`
+- `DELETE /api/v1/categories/:id` (archivado logico)
+- `PATCH /api/v1/categories/:id/restore` (desarchivar)
 
-El borrado sera un archivado logico si la categoria tiene movimientos asociados.
+El borrado es un archivado logico (`isArchived = true`); no se borra la fila. El `PATCH` edita `name`, `type` y `color`; `isArchived` se gestiona solo con `DELETE` y `restore`. Los parametros `:id` se validan con `ParseUUIDPipe` (un id mal formado responde 400).
+
+### Paginacion
+
+Los listados (`GET /categories`, y mas adelante `GET /transactions`) son paginados mediante un `PaginationQueryDto` reutilizable:
+
+- `page`: entero >= 1, por defecto `1`.
+- `limit`: entero entre 1 y 100, por defecto `20`.
+
+La respuesta tiene siempre la misma forma:
+
+```json
+{ "data": [], "total": 0, "page": 1, "limit": 20 }
+```
+
+`data` son las filas de la pagina, `total` el numero total de filas y `page`/`limit` se devuelven como eco de lo aplicado.
+
+### Manejo de errores
+
+Un filtro global (`PrismaExceptionFilter`) traduce errores de Prisma a HTTP:
+
+- `P2025` (no encontrado) → `404`.
+- `P2002` (duplicado) → `409`.
+- Cualquier otro → `500`.
+
+Los errores de validacion de DTO los gestiona el `ValidationPipe` global (`400`).
+
+### Documentacion de la API
+
+La API se documenta con Swagger en `http://localhost:3001/docs`. Las rutas se generan a partir de los decoradores de NestJS (`@ApiTags`, `@ApiProperty`). El JSON OpenAPI esta disponible en `/docs-json`.
 
 ### Cuentas
 
