@@ -70,6 +70,7 @@ finanzas_personales/
 │   │   ├── prisma/          (PrismaService / PrismaModule)
 │   │   ├── accounts/        (pendiente)
 │   │   ├── transactions/    (pendiente)
+│   │   ├── dashboard/       (pendiente, agrega movimientos)
 │   │   ├── app.module.ts
 │   │   ├── app.setup.ts     (prefijo, pipe, filtro y Swagger)
 │   │   └── main.ts
@@ -406,6 +407,7 @@ El trabajo se organiza en rebanadas verticales (backend + frontend + OpenClaw) s
 - Swagger (hecho).
 - `accounts` (pendiente).
 - `transactions` con TDD, filtros y paginacion (pendiente).
+- `dashboard` (pendiente; agrega los movimientos por periodo y categoria).
 
 ### Rebanada 2: frontend usable (Nivel 1)
 
