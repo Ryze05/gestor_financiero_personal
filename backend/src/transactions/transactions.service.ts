@@ -85,6 +85,12 @@ export class TransactionsService {
       where: { id },
     });
 
+    if (current.transferId) {
+      throw new ConflictException(
+        'No se puede editar un movimiento de una transferencia.',
+      );
+    }
+
     const accountId = dto.accountId ?? current.accountId;
     const categoryId = dto.categoryId ?? current.categoryId;
     const type = dto.type ?? current.type;

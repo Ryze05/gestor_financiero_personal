@@ -93,6 +93,20 @@ describe('Categories (e2e)', () => {
       .expect(400);
   });
 
+  it('POST con nombre de más de 80 caracteres → 400', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/categories')
+      .send({ name: 'e2e-' + 'a'.repeat(81), type: 'EXPENSE' })
+      .expect(400);
+  });
+
+  it('POST con color inválido → 400', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/categories')
+      .send({ name: uniqueName(), type: 'EXPENSE', color: 'no-un-color' })
+      .expect(400);
+  });
+
   it('POST duplicado → 409', async () => {
     const name = uniqueName();
     await request(app.getHttpServer())
@@ -141,6 +155,15 @@ describe('Categories (e2e)', () => {
     await request(app.getHttpServer())
       .patch(`/api/v1/categories/${created.id}`)
       .send({ type: 'NO_EXISTE' })
+      .expect(400);
+  });
+
+  it('PATCH con campo no permitido → 400', async () => {
+    const created = await createCategory();
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/categories/${created.id}`)
+      .send({ foo: 'bar' })
       .expect(400);
   });
 

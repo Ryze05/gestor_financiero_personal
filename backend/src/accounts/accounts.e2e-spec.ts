@@ -80,6 +80,13 @@ describe('Accounts (e2e)', () => {
       .expect(400);
   });
 
+  it('POST con nombre de más de 80 caracteres → 400', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/accounts')
+      .send({ name: 'e2e-' + 'a'.repeat(81), currency: 'EUR' })
+      .expect(400);
+  });
+
   it('POST duplicado → 409', async () => {
     const name = uniqueName();
     await request(app.getHttpServer())
@@ -134,6 +141,15 @@ describe('Accounts (e2e)', () => {
     await request(app.getHttpServer())
       .patch(`/api/v1/accounts/${created.id}`)
       .send({ currency: 'GBP' })
+      .expect(400);
+  });
+
+  it('PATCH con campo no permitido → 400', async () => {
+    const created = await createAccount();
+
+    await request(app.getHttpServer())
+      .patch(`/api/v1/accounts/${created.id}`)
+      .send({ foo: 'bar' })
       .expect(400);
   });
 

@@ -193,6 +193,74 @@ describe('Transactions (e2e)', () => {
     ).expect(400);
   });
 
+  it('POST amount negativo → 400', async () => {
+    await post(
+      '/api/v1/transactions',
+      validTransaction({ amount: -5 }),
+    ).expect(400);
+  });
+
+  it('POST concept de más de 150 caracteres → 400', async () => {
+    await post(
+      '/api/v1/transactions',
+      validTransaction({ concept: 'a'.repeat(151) }),
+    ).expect(400);
+  });
+
+  it('POST notes de más de 500 caracteres → 400', async () => {
+    await post(
+      '/api/v1/transactions',
+      validTransaction({ notes: 'a'.repeat(501) }),
+    ).expect(400);
+  });
+
+  it('POST OPENCLAW con externalId demasiado corto → 400', async () => {
+    await post(
+      '/api/v1/transactions',
+      validTransaction({ source: 'OPENCLAW', externalId: 'ab' }),
+    ).expect(400);
+  });
+
+  it('POST con notes opcional → 201', async () => {
+    const res = await post(
+      '/api/v1/transactions',
+      validTransaction({ notes: 'e2e una nota' }),
+    ).expect(201);
+    expect(res.body.notes).toBe('e2e una nota');
+  });
+
+  it('POST concept vacío → 400', async () => {
+    await post(
+      '/api/v1/transactions',
+      validTransaction({ concept: '   ' }),
+    ).expect(400);
+  });
+
+  it('PATCH con cuerpo vacío → 200 (sin cambios)', async () => {
+    const created = await createTransaction();
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/transactions/${created.id}`)
+      .send({})
+      .expect(200);
+    expect(res.body.id).toBe(created.id);
+  });
+
+  it('PATCH amount con 3 decimales → 400', async () => {
+    const created = await createTransaction();
+    await request(app.getHttpServer())
+      .patch(`/api/v1/transactions/${created.id}`)
+      .send({ amount: 1.234 })
+      .expect(400);
+  });
+
+  it('PATCH con campo no permitido → 400', async () => {
+    const created = await createTransaction();
+    await request(app.getHttpServer())
+      .patch(`/api/v1/transactions/${created.id}`)
+      .send({ foo: 'bar' })
+      .expect(400);
+  });
+
   it('POST con campo no permitido → 400', async () => {
     await post('/api/v1/transactions', {
       ...validTransaction(),

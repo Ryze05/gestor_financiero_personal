@@ -399,6 +399,38 @@ describe('TransactionsService', () => {
       const args = prisma.transaction.update.mock.calls[0][0];
       expect(args.data.type).toBe(TransactionType.INCOME);
     });
+
+    it('rechaza editar un movimiento de una transferencia', async () => {
+      prisma.transaction.findUniqueOrThrow.mockResolvedValue({
+        ...current,
+        transferId: 'tr1',
+      });
+
+      await expect(service.update('t1', { concept: 'x' })).rejects.toThrow(
+        ConflictException,
+      );
+      expect(prisma.transaction.update).not.toHaveBeenCalled();
+    });
+
+    it('actualiza sin cambios si el cuerpo está vacío', async () => {
+      prisma.transaction.findUniqueOrThrow.mockResolvedValue(current);
+      prisma.account.findUnique.mockResolvedValue({
+        id: 'acc1',
+        currency: Currency.EUR,
+        isArchived: false,
+      });
+      prisma.category.findUnique.mockResolvedValue({
+        id: 'cat1',
+        type: CategoryType.EXPENSE,
+        isArchived: false,
+      });
+      prisma.transaction.update.mockResolvedValue({ id: 't1' });
+
+      await service.update('t1', {});
+
+      const args = prisma.transaction.update.mock.calls[0][0];
+      expect(args.data).toEqual({});
+    });
   });
 
   describe('remove', () => {
