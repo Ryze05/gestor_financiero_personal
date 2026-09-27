@@ -1,0 +1,78 @@
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.trigger:hover,
+.trigger:focus-visible {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.trigger[data-placeholder] {
+  color: var(--text-secondary);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.content {
+  z-index: 50;
+  width: var(--radix-select-trigger-width);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+}
+
+.viewport {
+  max-height: 280px;
+  padding: 4px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  outline: none;
+}
+
+.item[data-highlighted] {
+  background: var(--background-soft);
+}
+
+.indicator {
+  color: var(--primary);
+}
+
+.indicator svg {
+  width: 16px;
+  height: 16px;
+}

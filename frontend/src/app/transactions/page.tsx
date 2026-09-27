@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type KeyboardEvent } from "react";
+import Link from "next/link";
 import {
   HiAdjustmentsHorizontal,
   HiMagnifyingGlass,
@@ -9,6 +10,7 @@ import {
 import Card from "@/components/Card";
 import DatePicker from "@/components/DatePicker";
 import { api, ApiError } from "@/lib/api/client";
+import { toApiDate } from "@/lib/utils/date";
 import type {
   Category,
   Transaction,
@@ -16,16 +18,6 @@ import type {
   TransactionType,
 } from "@/lib/api/types";
 import styles from "./transactions.module.css";
-
-function toApiDate(date: Date | undefined): string | undefined {
-  if (!date) return undefined;
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-}
 
 export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -148,10 +140,10 @@ export default function TransactionsPage() {
           </p>
         </div>
 
-        <button type="button" className={styles.primaryButton}>
+        <Link href="/transactions/new" className={styles.primaryButton}>
           <HiPlus />
           Nuevo movimiento
-        </button>
+        </Link>
       </header>
 
       <Card>
