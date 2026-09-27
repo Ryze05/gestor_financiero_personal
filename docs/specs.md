@@ -291,26 +291,47 @@ Para estas respuestas, OpenClaw debera consultar los endpoints y no inventar dat
 
 ## 8. API funcional esperada
 
-La API sera REST, con prefijo global `/api/v1`, y tendra, como minimo, estos recursos:
+La API sera REST, con prefijo global `/api/v1`.
+
+Salud:
 
 - `GET /api/v1/health`
-- `GET /api/v1/transactions`
+
+Movimientos:
+
+- `GET /api/v1/transactions` (filtros: `from`, `to`, `categoryId`, `type`, `search`, `page`, `limit`)
 - `POST /api/v1/transactions`
 - `GET /api/v1/transactions/:id`
 - `PATCH /api/v1/transactions/:id`
-- `DELETE /api/v1/transactions/:id`
-- `GET /api/v1/categories`
+- `DELETE /api/v1/transactions/:id` (borrado real)
+
+Categorias:
+
+- `GET /api/v1/categories` (paginado)
 - `POST /api/v1/categories`
+- `GET /api/v1/categories/:id`
 - `PATCH /api/v1/categories/:id`
-- `GET /api/v1/accounts`
+- `DELETE /api/v1/categories/:id` (archivado logico)
+- `PATCH /api/v1/categories/:id/restore`
+
+Cuentas:
+
+- `GET /api/v1/accounts` (paginado)
 - `POST /api/v1/accounts`
 - `GET /api/v1/accounts/:id`
-- `GET /api/v1/dashboard`
-- `POST /api/v1/transfers` (Rebanada 4)
+- `PATCH /api/v1/accounts/:id`
+- `DELETE /api/v1/accounts/:id` (archivado logico)
+- `PATCH /api/v1/accounts/:id/restore`
 
-Para el MVP, las categorias se cargaran mediante seed y no sera obligatorio disponer de endpoints de administracion. La edicion, eliminacion, cuentas avanzadas y presupuestos quedan fuera del primer flujo demostrable.
+Dashboard:
 
-Los nombres definitivos de campos, codigos de error y parametros se concretaran en el contrato tecnico de la API.
+- `GET /api/v1/dashboard?from=&to=&currency=`
+
+Transferencias (Rebanada 4):
+
+- `POST /api/v1/transfers`
+
+Los nombres de campos, codigos de error y parametros se concretan en `docs/architecture.md`.
 
 ## 9. Criterios de aceptacion del MVP
 
