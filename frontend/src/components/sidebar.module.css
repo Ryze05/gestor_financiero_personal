@@ -74,7 +74,7 @@
 
 .themeToggle:hover {
   color: var(--foreground);
-  border-color: var(--accent);
+  border-color: var(--accent-hover);
 }
 
 @media (max-width: 767px) {

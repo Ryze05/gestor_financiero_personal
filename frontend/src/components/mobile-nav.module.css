@@ -48,7 +48,7 @@
 
   .themeToggle:hover {
     color: var(--foreground);
-    border-color: var(--accent);
+    border-color: var(--accent-hover);
   }
 
   .bottomNav {

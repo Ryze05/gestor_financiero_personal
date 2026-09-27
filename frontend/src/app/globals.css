@@ -8,6 +8,7 @@
   --primary: #6d28d9;
   --primary-hover: #5b21b6;
   --accent: #db2777;
+  --accent-hover: #b96a96;
 
   --font-sans: var(--font-inter), Arial, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
@@ -27,6 +28,7 @@
   --primary: #4c1d95;
   --primary-hover: #6d28d9;
   --accent: #ec4899;
+  --accent-hover: #d978a9;
   color-scheme: dark;
 }
 

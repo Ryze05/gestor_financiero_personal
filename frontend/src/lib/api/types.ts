@@ -3,6 +3,29 @@ export type TransactionType = "INCOME" | "EXPENSE";
 export type TransactionSource = "WEB" | "OPENCLAW";
 export type CategoryType = "INCOME" | "EXPENSE" | "BOTH";
 
+export interface TransactionQuery {
+  from?: string;
+  to?: string;
+  categoryId?: string;
+  type?: TransactionType;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface CreateTransactionInput {
+  type: TransactionType;
+  amount: number;
+  currency: Currency;
+  concept: string;
+  date: string;
+  notes?: string;
+  categoryId: string;
+  accountId: string;
+  source?: TransactionSource;
+  externalId?: string;
+}
+
 export interface Account {
   id: string;
   name: string;

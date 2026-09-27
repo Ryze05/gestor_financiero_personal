@@ -1,9 +1,11 @@
 import type {
   Account,
   Category,
+  CreateTransactionInput,
   DashboardSummary,
   Paginated,
   Transaction,
+  TransactionQuery,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
@@ -19,10 +21,15 @@ export class ApiError extends Error {
   }
 }
 
-function params(values: Record<string, string | number | undefined>): string {
+function params(values: object): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(values)) {
-    if (value !== undefined && value !== "") search.set(key, String(value));
+    if (
+      (typeof value === "string" || typeof value === "number") &&
+      value !== ""
+    ) {
+      search.set(key, String(value));
+    }
   }
   const qs = search.toString();
   return qs ? `?${qs}` : "";
@@ -57,13 +64,12 @@ export const api = {
 
   //----------------------------------------------------------------------------
 
-  listTransactions: (
-    query?: Record<string, string | number | undefined>,
-  ) => request<Paginated<Transaction>>(`/transactions${params(query ?? {})}`),
+  listTransactions: (query?: TransactionQuery) =>
+    request<Paginated<Transaction>>(`/transactions${params(query ?? {})}`),
 
   getTransaction: (id: string) => request<Transaction>(`/transactions/${id}`),
 
-  createTransaction: (body: unknown) =>
+  createTransaction: (body: CreateTransactionInput) =>
     request<Transaction>("/transactions", {
       method: "POST",
       body: JSON.stringify(body),

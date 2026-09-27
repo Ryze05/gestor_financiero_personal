@@ -17,9 +17,14 @@
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.trigger:hover {
+.trigger:hover:not([aria-disabled="true"]) {
   border-color: var(--primary);
   background: var(--background-soft);
+}
+
+.trigger[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .triggerIcon {
@@ -33,12 +38,64 @@
   top: calc(100% + 8px);
   left: 0;
   z-index: 20;
-  width: min(340px, calc(100vw - 32px));
+  box-sizing: border-box;
+  width: min(360px, calc(100vw - 32px));
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
   background: var(--surface);
   box-shadow: 0 16px 40px rgb(0 0 0 / 25%);
+}
+
+.popover :global(.rdp-root) {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: var(--background-soft);
+  --rdp-today-color: var(--accent);
+  --rdp-day-width: calc((min(360px, 100vw - 32px) - 32px) / 7);
+  --rdp-day-height: 42px;
+  --rdp-day_button-width: 100%;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-border-radius: 8px;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.popover :global(.rdp-caption_label),
+.popover :global(.rdp-weekday) {
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.popover :global(.rdp-weekday) {
+  color: var(--text-secondary);
+}
+
+.popover :global(.rdp-day) {
+  padding: 0;
+  text-align: center;
+}
+
+.popover :global(.rdp-day_button) {
+  box-sizing: border-box;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  border-radius: 8px;
+}
+
+.popover :global(.rdp-day_button:hover) {
+  background: var(--background-soft);
+}
+
+.popover :global(.rdp-selected .rdp-day_button) {
+  background: var(--primary) !important;
+  color: var(--foreground) !important;
+}
+
+.popover :global(.rdp-disabled) {
+  opacity: 0.25;
 }
 
 .backdrop {
@@ -57,12 +114,13 @@
   .popover {
     position: fixed;
     top: 50%;
-    right: 16px;
-    left: 16px;
-    width: auto;
+    left: 50%;
+    right: auto;
+    box-sizing: border-box;
+    width: min(360px, calc(100vw - 32px));
     max-height: calc(100vh - 160px);
     overflow: auto;
-    transform: translateY(-50%);
+    transform: translate(-50%, -50%);
     z-index: 31;
   }
 }

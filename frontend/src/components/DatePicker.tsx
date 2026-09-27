@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, type Matcher } from "react-day-picker";
 import { es } from "react-day-picker/locale";
 import { HiCalendarDays } from "react-icons/hi2";
 import "react-day-picker/style.css";
@@ -10,9 +10,15 @@ import styles from "./date-picker.module.css";
 export default function DatePicker({
   value,
   onChange,
+  placeholder = "Seleccionar fecha",
+  disabled = false,
+  matcher,
 }: {
   value: Date | undefined;
   onChange: (date: Date | undefined) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  matcher?: Matcher | Matcher[];
 }) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -43,11 +49,15 @@ export default function DatePicker({
       <button
         type="button"
         className={styles.trigger}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          if (disabled) return;
+          setOpen((v) => !v);
+        }}
+        aria-disabled={disabled}
       >
         <HiCalendarDays className={styles.triggerIcon} />
         <span>
-          {value ? value.toLocaleDateString("es-ES") : "Seleccionar fecha"}
+          {value ? value.toLocaleDateString("es-ES") : placeholder}
         </span>
       </button>
 
@@ -62,6 +72,7 @@ export default function DatePicker({
                 onChange(date);
                 setOpen(false);
               }}
+              disabled={matcher}
               locale={es}
               weekStartsOn={1}
               defaultMonth={value}
