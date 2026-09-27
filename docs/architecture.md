@@ -69,7 +69,7 @@ finanzas_personales/
 │   │   │   └── filters/     (PrismaExceptionFilter)
 │   │   ├── config/          (validacion de entorno)
 │   │   ├── prisma/          (PrismaService / PrismaModule)
-│   │   ├── accounts/        (pendiente)
+│   │   ├── accounts/        (hecho)
 │   │   ├── transactions/    (pendiente)
 │   │   ├── dashboard/       (pendiente, agrega movimientos)
 │   │   ├── app.module.ts
@@ -263,8 +263,12 @@ La API se documenta con Swagger en `http://localhost:3001/docs`. Las rutas se ge
 - `POST /api/v1/accounts`
 - `GET /api/v1/accounts/:id`
 - `PATCH /api/v1/accounts/:id`
+- `DELETE /api/v1/accounts/:id` (archivado logico)
+- `PATCH /api/v1/accounts/:id/restore` (desarchivar)
 
 El seed creara una cuenta inicial para poder probar la aplicacion, pero la API y el frontend permitiran crear mas cuentas. Cada cuenta tendra su propia moneda (`EUR` o `USD`) y sus movimientos no se mezclaran con los de otras cuentas al calcular saldos.
+
+Todas las respuestas de cuentas incluyen `currentBalance`, calculado como `initialBalance + ingresos - gastos` en la moneda de la cuenta, excluyendo las transferencias. El `currency` no es editable (`PATCH` solo admite `name` e `initialBalance`).
 
 ### Dashboard
 
@@ -406,7 +410,7 @@ El trabajo se organiza en rebanadas verticales (backend + frontend + OpenClaw) s
 - `health` (hecho).
 - `categories`: CRUD, archivar/restaurar, paginacion, filtro de errores y tests (hecho).
 - Swagger (hecho).
-- `accounts` (pendiente).
+- `accounts`: CRUD, archivar/restaurar, paginacion y `currentBalance` (hecho).
 - `transactions` con TDD, filtros y paginacion (pendiente).
 - `dashboard` (pendiente; agrega los movimientos por periodo y categoria).
 

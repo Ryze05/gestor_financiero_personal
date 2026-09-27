@@ -9,7 +9,7 @@ export class CategoriesService {
   constructor(private readonly prisma: PrismaService) {}
 
   create(createCategoryDto: CreateCategoryDto) {
-    return this.prisma.category.create({data: createCategoryDto});
+    return this.prisma.category.create({ data: createCategoryDto });
   }
 
   async findAll(pagination: PaginationQueryDto) {

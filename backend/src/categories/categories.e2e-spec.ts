@@ -210,4 +210,24 @@ describe('Categories (e2e)', () => {
       .patch('/api/v1/categories/no-es-uuid/restore')
       .expect(400);
   });
+
+  it('POST normaliza el nombre (trim y espacios internos)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/categories')
+      .send({ name: '  e2e-   Normalizada  ', type: 'EXPENSE' })
+      .expect(201);
+
+    expect(res.body.name).toBe('e2e- Normalizada');
+  });
+
+  it('PATCH normaliza el nombre', async () => {
+    const created = await createCategory();
+
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/categories/${created.id}`)
+      .send({ name: '  e2e-Editada  ' })
+      .expect(200);
+
+    expect(res.body.name).toBe('e2e-Editada');
+  });
 });
