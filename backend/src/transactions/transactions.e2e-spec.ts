@@ -172,6 +172,27 @@ describe('Transactions (e2e)', () => {
     ).expect(400);
   });
 
+  it('POST amount con 3 decimales → 400', async () => {
+    await post(
+      '/api/v1/transactions',
+      validTransaction({ amount: 1.234 }),
+    ).expect(400);
+  });
+
+  it('POST date inválida → 400', async () => {
+    await post(
+      '/api/v1/transactions',
+      validTransaction({ date: 'no-es-fecha' }),
+    ).expect(400);
+  });
+
+  it('POST type inválido → 400', async () => {
+    await post(
+      '/api/v1/transactions',
+      validTransaction({ type: 'OTRO' }),
+    ).expect(400);
+  });
+
   it('POST con campo no permitido → 400', async () => {
     await post('/api/v1/transactions', {
       ...validTransaction(),

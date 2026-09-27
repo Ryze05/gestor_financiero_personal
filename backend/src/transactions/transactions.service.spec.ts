@@ -238,6 +238,34 @@ describe('TransactionsService', () => {
         orderBy: { date: 'desc' },
       });
     });
+
+    it('aplica solo el filtro from', async () => {
+      prisma.transaction.findMany.mockResolvedValue([]);
+      prisma.transaction.count.mockResolvedValue(0);
+
+      await service.findAll({ page: 1, limit: 20, from: '2026-09-01' });
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+        where: { date: { gte: new Date('2026-09-01') } },
+        skip: 0,
+        take: 20,
+        orderBy: { date: 'desc' },
+      });
+    });
+
+    it('aplica solo el filtro to', async () => {
+      prisma.transaction.findMany.mockResolvedValue([]);
+      prisma.transaction.count.mockResolvedValue(0);
+
+      await service.findAll({ page: 1, limit: 20, to: '2026-09-30' });
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+        where: { date: { lte: new Date('2026-09-30') } },
+        skip: 0,
+        take: 20,
+        orderBy: { date: 'desc' },
+      });
+    });
   });
 
   describe('findOne', () => {
@@ -327,6 +355,49 @@ describe('TransactionsService', () => {
         service.update('t1', { currency: Currency.USD }),
       ).rejects.toThrow(BadRequestException);
       expect(prisma.transaction.update).not.toHaveBeenCalled();
+    });
+
+    it('permite cambiar de cuenta validando la nueva', async () => {
+      prisma.transaction.findUniqueOrThrow.mockResolvedValue(current);
+      prisma.account.findUnique.mockResolvedValue({
+        id: 'acc2',
+        currency: Currency.EUR,
+        isArchived: false,
+      });
+      prisma.category.findUnique.mockResolvedValue({
+        id: 'cat1',
+        type: CategoryType.EXPENSE,
+        isArchived: false,
+      });
+      prisma.transaction.update.mockResolvedValue({ id: 't1' });
+
+      await service.update('t1', { accountId: 'acc2' });
+
+      const args = prisma.transaction.update.mock.calls[0][0];
+      expect(args.data.accountId).toBe('acc2');
+    });
+
+    it('permite cambiar el tipo si la categoría es BOTH', async () => {
+      prisma.transaction.findUniqueOrThrow.mockResolvedValue({
+        ...current,
+        categoryId: 'catBoth',
+      });
+      prisma.account.findUnique.mockResolvedValue({
+        id: 'acc1',
+        currency: Currency.EUR,
+        isArchived: false,
+      });
+      prisma.category.findUnique.mockResolvedValue({
+        id: 'catBoth',
+        type: CategoryType.BOTH,
+        isArchived: false,
+      });
+      prisma.transaction.update.mockResolvedValue({ id: 't1' });
+
+      await service.update('t1', { type: TransactionType.INCOME });
+
+      const args = prisma.transaction.update.mock.calls[0][0];
+      expect(args.data.type).toBe(TransactionType.INCOME);
     });
   });
 
