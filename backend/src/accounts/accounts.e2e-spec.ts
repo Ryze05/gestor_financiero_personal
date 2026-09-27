@@ -178,4 +178,74 @@ describe('Accounts (e2e)', () => {
       .patch(`/api/v1/accounts/${MISSING_ID}/restore`)
       .expect(404);
   });
+
+  it('GET /api/v1/accounts?limit=2 → respeta el límite', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/accounts?limit=2')
+      .expect(200);
+
+    expect(res.body.limit).toBe(2);
+    expect(res.body.data.length).toBeLessThanOrEqual(2);
+  });
+
+  it('GET /api/v1/accounts?limit=1000 → 400', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/accounts?limit=1000')
+      .expect(400);
+  });
+
+  it('POST initialBalance con más de 2 decimales → 400', async () => {
+    await request(app.getHttpServer())
+      .post('/api/v1/accounts')
+      .send({ name: uniqueName(), initialBalance: 1.234, currency: 'EUR' })
+      .expect(400);
+  });
+
+  it('POST initialBalance negativo → 201 (permitido)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/accounts')
+      .send({ name: uniqueName(), initialBalance: -50, currency: 'EUR' })
+      .expect(201);
+
+    expect(res.body.currentBalance).toBe('-50');
+  });
+
+  it('PATCH id mal formado → 400', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/accounts/no-es-uuid')
+      .send({ name: 'e2e-x' })
+      .expect(400);
+  });
+
+  it('DELETE id mal formado → 400', async () => {
+    await request(app.getHttpServer())
+      .delete('/api/v1/accounts/no-es-uuid')
+      .expect(400);
+  });
+
+  it('PATCH restore id mal formado → 400', async () => {
+    await request(app.getHttpServer())
+      .patch('/api/v1/accounts/no-es-uuid/restore')
+      .expect(400);
+  });
+
+  it('POST normaliza el nombre (trim y espacios internos)', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/accounts')
+      .send({ name: '  e2e-   Normalizada  ', currency: 'EUR' })
+      .expect(201);
+
+    expect(res.body.name).toBe('e2e- Normalizada');
+  });
+
+  it('PATCH normaliza el nombre', async () => {
+    const created = await createAccount();
+
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/accounts/${created.id}`)
+      .send({ name: '  e2e-Editada  ' })
+      .expect(200);
+
+    expect(res.body.name).toBe('e2e-Editada');
+  });
 });
