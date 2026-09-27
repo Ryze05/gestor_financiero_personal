@@ -6,6 +6,7 @@ import type {
   Paginated,
   Transaction,
   TransactionQuery,
+  UpdateTransactionInput,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
@@ -74,6 +75,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  updateTransaction: (id: string, body: UpdateTransactionInput) =>
+    request<Transaction>(`/transactions/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  deleteTransaction: (id: string) =>
+    request<void>(`/transactions/${id}`, { method: "DELETE" }),
 
   //----------------------------------------------------------------------------  
 

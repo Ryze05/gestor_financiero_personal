@@ -236,7 +236,47 @@
 }
 
 .error {
-  color: var(--accent);
+  color: var(--negative);
+}
+
+.confirmText {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.confirmActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.secondaryButton,
+.dangerButton {
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.secondaryButton:hover {
+  border-color: var(--primary);
+}
+
+.dangerButton {
+  border-color: var(--negative);
+  background: var(--negative);
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+.dangerButton[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .emptyState {
@@ -266,9 +306,16 @@
 
 .transactionInfo {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 4px;
   min-width: 0;
+}
+
+.transactionActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .transactionInfo strong {
@@ -383,7 +430,12 @@
   }
 
   .transactionRow {
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
+  }
+
+  .transactionActions {
+    justify-content: space-between;
+    width: 100%;
   }
 }

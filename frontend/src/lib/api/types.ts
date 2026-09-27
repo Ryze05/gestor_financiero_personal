@@ -26,6 +26,10 @@ export interface CreateTransactionInput {
   externalId?: string;
 }
 
+export type UpdateTransactionInput = Partial<
+  Omit<CreateTransactionInput, "source" | "externalId">
+>;
+
 export interface Account {
   id: string;
   name: string;

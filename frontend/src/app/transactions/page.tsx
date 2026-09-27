@@ -5,10 +5,15 @@ import Link from "next/link";
 import {
   HiAdjustmentsHorizontal,
   HiMagnifyingGlass,
+  HiPencil,
   HiPlus,
+  HiTrash,
 } from "react-icons/hi2";
 import Card from "@/components/Card";
 import DatePicker from "@/components/DatePicker";
+import ActionsMenu from "@/components/ActionsMenu";
+import Modal from "@/components/Dialog";
+import TransactionForm from "@/components/TransactionForm";
 import { api, ApiError } from "@/lib/api/client";
 import { toApiDate } from "@/lib/utils/date";
 import { formatMoney } from "@/lib/utils/money";
@@ -35,6 +40,10 @@ export default function TransactionsPage() {
   const [to, setTo] = useState<Date>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<Transaction | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
+  const [deletingError, setDeletingError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Transaction | null>(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -285,21 +294,139 @@ export default function TransactionsPage() {
                       : "Sin categoría"}
                   </span>
                 </div>
-                <span
-                  className={
-                    transaction.type === "EXPENSE"
-                      ? styles.expenseAmount
-                      : styles.incomeAmount
-                  }
-                >
-                  {transaction.type === "EXPENSE" ? "-" : "+"}
-                  {formatMoney(transaction.amount, transaction.currency)}
-                </span>
+                <div className={styles.transactionActions}>
+                  <span
+                    className={
+                      transaction.type === "EXPENSE"
+                        ? styles.expenseAmount
+                        : styles.incomeAmount
+                    }
+                  >
+                    {transaction.type === "EXPENSE" ? "-" : "+"}
+                    {formatMoney(transaction.amount, transaction.currency)}
+                  </span>
+                  <ActionsMenu
+                    items={[
+                      {
+                        label: "Editar",
+                        icon: <HiPencil />,
+                        onSelect: () => setEditing(transaction),
+                      },
+                      {
+                        label: "Eliminar",
+                        icon: <HiTrash />,
+                        onSelect: () => setDeleting(transaction),
+                        danger: true,
+                      },
+                    ]}
+                  />
+                </div>
               </article>
             ))}
           </div>
         )}
       </Card>
+
+      <Modal
+        title="Editar movimiento"
+        open={editing !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditing(null);
+        }}
+      >
+        {editing && (
+          <TransactionForm
+            accounts={accounts}
+            categories={categories}
+            submitLabel="Guardar cambios"
+            initial={{
+              type: editing.type,
+              amount: editing.amount,
+              concept: editing.concept,
+              date: new Date(editing.date),
+              accountId: editing.accountId,
+              categoryId: editing.categoryId ?? "",
+              notes: editing.notes ?? "",
+            }}
+            onSubmit={async (input) => {
+              await api.updateTransaction(editing.id, input);
+              setEditing(null);
+              const result = await api.listTransactions({
+                from: toApiDate(from),
+                to: toApiDate(to),
+                search: search || undefined,
+                type: type || undefined,
+                categoryId: categoryId || undefined,
+                page: 1,
+                limit: 20,
+              });
+              setTransactions(result.data);
+              setTotal(result.total);
+            }}
+          />
+        )}
+      </Modal>
+
+      <Modal
+        title="Eliminar movimiento"
+        open={deleting !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleting(null);
+            setDeletingError(null);
+          }
+        }}
+      >
+        <p className={styles.confirmText}>
+          ¿Seguro que quieres eliminar “{deleting?.concept}”? No se puede
+          deshacer.
+        </p>
+        {deletingError && <p className={styles.error}>{deletingError}</p>}
+        <div className={styles.confirmActions}>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => setDeleting(null)}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className={styles.dangerButton}
+            aria-disabled={deletingBusy}
+            onClick={async () => {
+              if (!deleting || deletingBusy) return;
+              setDeletingBusy(true);
+              setDeletingError(null);
+              try {
+                await api.deleteTransaction(deleting.id);
+                setDeleting(null);
+                const result = await api.listTransactions({
+                  from: toApiDate(from),
+                  to: toApiDate(to),
+                  search: search || undefined,
+                  type: type || undefined,
+                  categoryId: categoryId || undefined,
+                  page: 1,
+                  limit: 20,
+                });
+                setTransactions(result.data);
+                setTotal(result.total);
+              } catch (err) {
+                setDeletingError(
+                  err instanceof ApiError
+                    ? err.message
+                    : "No se pudo eliminar.",
+                );
+              } finally {
+                setDeletingBusy(false);
+              }
+            }}
+          >
+            {deletingBusy ? "Eliminando..." : "Eliminar"}
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 }

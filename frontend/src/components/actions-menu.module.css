@@ -1,0 +1,66 @@
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.trigger:hover,
+.trigger[data-state="open"] {
+  border-color: var(--border);
+  background: var(--background-soft);
+  color: var(--foreground);
+}
+
+.trigger svg {
+  width: 18px;
+  height: 18px;
+}
+
+.content {
+  z-index: 50;
+  min-width: 160px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 45%);
+}
+
+.item,
+.itemDanger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  outline: none;
+}
+
+.item[data-highlighted] {
+  background: var(--background-soft);
+}
+
+.itemDanger {
+  color: var(--negative);
+}
+
+.itemDanger[data-highlighted] {
+  background: var(--background-soft);
+}
+
+.item svg,
+.itemDanger svg {
+  width: 16px;
+  height: 16px;
+}
