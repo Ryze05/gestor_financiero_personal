@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api/client";
 import type { DashboardSummary } from "@/lib/api/types";
 import Card from "@/components/Card";
+import MonthPicker from "@/components/MonthPicker";
 import styles from "./dashboard.module.css";
 
 function monthRange(value: string): { from: string; to: string } {
@@ -67,13 +68,7 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <div className={styles.controls}>
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className={styles.monthInput}
-          aria-label="Mes"
-        />
+        <MonthPicker value={month} onChange={setMonth} />
         <div className={styles.currencyGroup}>
           {CURRENCIES.map((c) => (
             <button

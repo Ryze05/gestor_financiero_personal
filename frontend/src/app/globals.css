@@ -11,6 +11,8 @@
 
   --font-sans: var(--font-inter), Arial, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
+  --text-sm: 0.875rem;
+  --text-lg: 1.125rem;
 
   color-scheme: light;
 }
@@ -73,6 +75,32 @@ a {
 .app {
   display: flex;
   min-height: 100vh;
+}
+
+.rdp-root {
+  --rdp-accent-color: var(--primary);
+  --rdp-accent-background-color: var(--background-soft);
+  --rdp-today-color: var(--accent);
+  --rdp-day-height: 40px;
+  --rdp-day-width: 40px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-width: 38px;
+  --rdp-day_button-border-radius: 8px;
+  --rdp-nav-height: 2.5rem;
+  --rdp-nav_button-width: 2.25rem;
+  --rdp-nav_button-height: 2.25rem;
+}
+
+.rdp-root .rdp-weekday {
+  color: var(--text-secondary);
+}
+
+.rdp-root .rdp-day_button {
+  font-family: var(--font-sans);
+}
+
+.rdp-root .rdp-day_button:hover {
+  background: var(--background-soft);
 }
 
 .main {
