@@ -4,6 +4,9 @@ import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter.
 
 export function setupApp(app: INestApplication): void {
   app.setGlobalPrefix('api/v1');
+  app.enableCors({
+    origin: 'http://localhost:3000',
+  });
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

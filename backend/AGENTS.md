@@ -63,6 +63,7 @@ pnpm prisma generate
 ## API Conventions
 
 - `src/app.setup.ts` centralizes the `/api/v1` prefix, the global `ValidationPipe`, the `PrismaExceptionFilter` and Swagger. `main.ts` and the e2e tests both call `setupApp(app)`.
+- `setupApp` also enables CORS for `http://localhost:3000` (the local Next.js frontend).
 - Swagger UI: `http://localhost:3001/docs`; OpenAPI JSON at `/docs-json`.
 - Global `ValidationPipe` uses `whitelist`, `forbidNonWhitelisted`, `transform` and `enableImplicitConversion`. DTOs must use `class-validator` decorators.
 - List endpoints are paginated with `PaginationQueryDto` and return `{ data, total, page, limit }`.

@@ -1,0 +1,135 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.monthInput {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 14px;
+}
+
+.currencyGroup {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.currencyBtn,
+.currencyActive {
+  padding: 8px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.currencyActive {
+  background: var(--primary);
+  color: var(--foreground);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-areas:
+    "balance balance balance balance balance income income income income expense expense expense"
+    "balance balance balance balance balance count count count category category category category";
+  gap: 16px;
+}
+
+.balance {
+  grid-area: balance;
+}
+
+.income {
+  grid-area: income;
+}
+
+.expense {
+  grid-area: expense;
+}
+
+.count {
+  grid-area: count;
+}
+
+.category {
+  grid-area: category;
+}
+
+.balanceAmount {
+  font-family: var(--font-mono);
+  font-size: 36px;
+  font-weight: 600;
+  margin-top: auto;
+}
+
+.amount {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.countNumber {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.categoryList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.categoryRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.categoryName {
+  color: var(--text-secondary);
+}
+
+.categoryTotal {
+  font-family: var(--font-mono);
+}
+
+.hint {
+  color: var(--text-secondary);
+}
+
+.error {
+  color: var(--accent);
+}
+
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "balance"
+      "income"
+      "expense"
+      "count"
+      "category";
+  }
+}
