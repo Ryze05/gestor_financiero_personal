@@ -70,7 +70,7 @@ finanzas_personales/
 │   │   ├── config/          (validacion de entorno)
 │   │   ├── prisma/          (PrismaService / PrismaModule)
 │   │   ├── accounts/        (hecho)
-│   │   ├── transactions/    (pendiente)
+│   │   ├── transactions/    (hecho)
 │   │   ├── dashboard/       (pendiente, agrega movimientos)
 │   │   ├── app.module.ts
 │   │   ├── app.setup.ts     (prefijo, pipe, filtro y Swagger)
@@ -214,8 +214,15 @@ Parametros de `GET /api/v1/transactions` en el MVP:
 - `to`: fecha final opcional.
 - `categoryId`: categoria opcional.
 - `type`: `INCOME` o `EXPENSE` opcional.
-- `search`: busqueda opcional por concepto.
+- `search`: busqueda opcional por concepto (insensible a mayusculas).
 - `page` y `limit` para paginacion.
+
+Notas de `transactions` en el MVP:
+
+- El borrado es **real** (no archivado): un movimiento es el final de la cadena y nadie lo referencia. Si pertenece a una transferencia (`transferId`), se rechaza con 409.
+- La creacion es **idempotente** por `externalId`: un reintento de OpenClaw devuelve el movimiento existente en vez de duplicarlo.
+- Validaciones: la cuenta debe existir y estar activa; la categoria debe existir, estar activa y ser compatible con el tipo.
+- En el MVP, la moneda del movimiento debe coincidir con la de su cuenta (`accountAmount = amount`, `exchangeRate = 1`). La conversion EUR/USD (Frankfurter) queda para la Rebanada 4.
 
 ### Categorias
 
@@ -411,7 +418,7 @@ El trabajo se organiza en rebanadas verticales (backend + frontend + OpenClaw) s
 - `categories`: CRUD, archivar/restaurar, paginacion, filtro de errores y tests (hecho).
 - Swagger (hecho).
 - `accounts`: CRUD, archivar/restaurar, paginacion y `currentBalance` (hecho).
-- `transactions` con TDD, filtros y paginacion (pendiente).
+- `transactions`: CRUD, filtros, paginacion, validaciones, idempotencia por `externalId` y borrado real (hecho).
 - `dashboard` (pendiente; agrega los movimientos por periodo y categoria).
 
 ### Rebanada 2: frontend usable (Nivel 1)

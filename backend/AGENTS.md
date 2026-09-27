@@ -81,6 +81,8 @@ pnpm prisma generate
 
 ## Testing
 
+Unit tests are `*.spec.ts`; e2e tests are `*.e2e-spec.ts`. E2E tests use the real development database, disable file parallelism (`fileParallelism: false` in `vitest.config.e2e.ts`) so files do not interfere, and each file cleans up the rows it creates (often by an `e2e-` name prefix) in `afterAll`.
+
 Use guided TDD for domain rules: failing test, minimum implementation, passing test, then refactor. Prioritize money, currency conversion, transfers, dashboard totals, validation, and OpenClaw idempotency. Use integration tests for API endpoints; exhaustive TDD of visual details belongs to the frontend.
 
 When finishing a backend change, run focused tests first, then `pnpm prisma validate` for Prisma changes, `pnpm run build` for backend changes, and lint when relevant. Report checks that could not run.

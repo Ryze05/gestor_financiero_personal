@@ -341,6 +341,7 @@ Una vez completado el MVP se podran valorar:
 
 - Autenticacion, multiusuario y roles (por ejemplo, solo un administrador podria crear o editar categorias).
 - Unicidad insensible a mayusculas para los nombres de categorias y cuentas, mediante una columna normalizada con restriccion unica (conservando el nombre visible tal cual).
+- Responder `200` (en lugar de `201`) cuando un reintento idempotente de OpenClaw devuelve un movimiento que ya existia.
 - Importacion de extractos bancarios mediante CSV o formatos bancarios.
 - Integracion automatica con bancos.
 - Movimientos recurrentes.
