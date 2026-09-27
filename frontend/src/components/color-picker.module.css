@@ -1,0 +1,78 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.swatch,
+.swatchActive {
+  width: 28px;
+  height: 28px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.swatchActive {
+  border-color: var(--foreground);
+}
+
+.custom {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.customSwatch {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.clear {
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.clear:hover {
+  color: var(--accent-hover);
+}
+
+.pickerWrap :global(.react-colorful) {
+  width: 100%;
+  height: 180px;
+}
+
+.pickerWrap :global(.react-colorful__saturation) {
+  border-radius: 8px 8px 0 0;
+}
+
+.pickerWrap :global(.react-colorful__hue) {
+  height: 20px;
+  border-radius: 0 0 8px 8px;
+}
+
+.pickerWrap :global(.react-colorful__pointer) {
+  width: 20px;
+  height: 20px;
+}
