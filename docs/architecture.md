@@ -71,7 +71,7 @@ finanzas_personales/
 │   │   ├── prisma/          (PrismaService / PrismaModule)
 │   │   ├── accounts/        (hecho)
 │   │   ├── transactions/    (hecho)
-│   │   ├── dashboard/       (pendiente, agrega movimientos)
+│   │   ├── dashboard/       (hecho, agrega movimientos)
 │   │   ├── app.module.ts
 │   │   ├── app.setup.ts     (prefijo, pipe, filtro y Swagger)
 │   │   └── main.ts
@@ -279,9 +279,27 @@ Todas las respuestas de cuentas incluyen `currentBalance`, calculado como `initi
 
 ### Dashboard
 
-- `GET /api/v1/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- `GET /api/v1/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD&currency=EUR`
 
-La respuesta incluira ingresos, gastos, balance, numero de movimientos y agrupaciones por categoria.
+Devuelve el resumen de un periodo en una moneda:
+
+```json
+{
+  "from": "2026-09-01",
+  "to": "2026-09-30",
+  "currency": "EUR",
+  "income": "1500",
+  "expense": "500",
+  "balance": "1000",
+  "count": 7,
+  "byCategory": [{ "categoryId": "...", "name": "Alimentación", "total": "120" }]
+}
+```
+
+- `currency`: por defecto `EUR`; los totales se calculan solo sobre movimientos de esa moneda (no se mezclan divisas).
+- Excluye las transferencias (`transferId: null`).
+- `byCategory` agrupa unicamente los **gastos** por categoria, con el nombre de la categoria.
+- Los importes se devuelven como string (son `Decimal`).
 
 Los movimientos pueden recibirse en una moneda distinta a la de su cuenta. El MVP permitira `EUR` y `USD`; los balances se calcularan en la moneda de cada cuenta despues de convertir cada movimiento.
 
@@ -419,7 +437,9 @@ El trabajo se organiza en rebanadas verticales (backend + frontend + OpenClaw) s
 - Swagger (hecho).
 - `accounts`: CRUD, archivar/restaurar, paginacion y `currentBalance` (hecho).
 - `transactions`: CRUD, filtros, paginacion, validaciones, idempotencia por `externalId` y borrado real (hecho).
-- `dashboard` (pendiente; agrega los movimientos por periodo y categoria).
+- `dashboard`: resumen por periodo y moneda con gastos por categoria (hecho).
+
+La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 
 ### Rebanada 2: frontend usable (Nivel 1)
 
