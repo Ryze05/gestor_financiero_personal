@@ -77,7 +77,8 @@ export const api = {
 
   //----------------------------------------------------------------------------  
 
-  listAccounts: () => request<Paginated<Account>>("/accounts"),
+  listAccounts: (query?: { page?: number; limit?: number }) =>
+    request<Paginated<Account>>(`/accounts${params(query ?? {})}`),
 
   createAccount: (body: unknown) =>
     request<Account>("/accounts", {
@@ -87,7 +88,8 @@ export const api = {
 
   //----------------------------------------------------------------------------  
     
-  listCategories: () => request<Paginated<Category>>("/categories"),
+  listCategories: (query?: { page?: number; limit?: number }) =>
+    request<Paginated<Category>>(`/categories${params(query ?? {})}`),
 
   createCategory: (body: unknown) =>
     request<Category>("/categories", {

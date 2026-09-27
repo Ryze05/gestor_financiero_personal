@@ -11,7 +11,9 @@ import Card from "@/components/Card";
 import DatePicker from "@/components/DatePicker";
 import { api, ApiError } from "@/lib/api/client";
 import { toApiDate } from "@/lib/utils/date";
+import { formatMoney } from "@/lib/utils/money";
 import type {
+  Account,
   Category,
   Transaction,
   TransactionQuery,
@@ -27,6 +29,7 @@ export default function TransactionsPage() {
   const [type, setType] = useState<TransactionType | "">("");
   const [categoryId, setCategoryId] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [from, setFrom] = useState<Date>();
   const [to, setTo] = useState<Date>();
@@ -52,16 +55,22 @@ export default function TransactionsPage() {
   useEffect(() => {
     let cancelled = false;
 
-    async function loadCategories() {
+    async function loadReferences() {
       try {
-        const result = await api.listCategories();
-        if (!cancelled) setCategories(result.data);
+        const [categoriesRes, accountsRes] = await Promise.all([
+          api.listCategories({ page: 1, limit: 100 }),
+          api.listAccounts({ page: 1, limit: 100 }),
+        ]);
+        if (!cancelled) {
+          setCategories(categoriesRes.data);
+          setAccounts(accountsRes.data);
+        }
       } catch {
-        // The transaction list remains usable if categories fail to load.
+        // The transaction list remains usable if references fail to load.
       }
     }
 
-    loadCategories();
+    loadReferences();
 
     return () => {
       cancelled = true;
@@ -265,7 +274,16 @@ export default function TransactionsPage() {
               <article key={transaction.id} className={styles.transactionRow}>
                 <div className={styles.transactionInfo}>
                   <strong>{transaction.concept}</strong>
-                  <span>{transaction.date.slice(0, 10)}</span>
+                  <span>
+                    {transaction.date.slice(0, 10)} ·{" "}
+                    {accounts.find((a) => a.id === transaction.accountId)?.name ??
+                      "—"}{" "}
+                    ·{" "}
+                    {transaction.categoryId
+                      ? (categories.find((c) => c.id === transaction.categoryId)
+                          ?.name ?? "—")
+                      : "Sin categoría"}
+                  </span>
                 </div>
                 <span
                   className={
@@ -275,7 +293,7 @@ export default function TransactionsPage() {
                   }
                 >
                   {transaction.type === "EXPENSE" ? "-" : "+"}
-                  {transaction.amount} {transaction.currency}
+                  {formatMoney(transaction.amount, transaction.currency)}
                 </span>
               </article>
             ))}

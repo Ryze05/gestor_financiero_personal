@@ -52,7 +52,7 @@ El trabajo se organiza en rebanadas verticales: cada una entrega algo que funcio
 1. **Rebanada 1. Nucleo backend.** Modulos `accounts`, `categories` y `transactions`, DTOs con `class-validator`, TDD y endpoints bajo `/api/v1`.
 2. **Rebanada 2. Frontend funcional (Nivel 1).** Dashboard, listado, alta manual, edicion y filtros.
 3. **Rebanada 3. OpenClaw (Nivel 1).** Skill que lee un ticket, propone datos, pide confirmacion y crea el movimiento.
-4. **Rebanada 4. Extras financieros (fase final).** Conversion EUR/USD, transferencias entre cuentas y filtros avanzados por cuenta, `source` y `accountAmount`. Estos filtros requieren ampliar los DTOs, queries y contrato del backend.
+4. **Rebanada 4. Extras financieros (fase final).** Conversion EUR/USD, transferencias entre cuentas, filtros avanzados por cuenta, `source` y `accountAmount`, e incluir los nombres de cuenta y categoria en la respuesta de movimientos. Estos cambios requieren ampliar los DTOs, queries y contrato del backend.
 5. **Rebanada 5. Nivel 2 (si el tiempo lo permite).** Entidad `Receipt` para agrupar por categoria.
 6. **Post-MVP. Nivel 3.** Lineas de producto.
 

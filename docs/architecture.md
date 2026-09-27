@@ -462,6 +462,7 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 - Conversion EUR/USD.
 - Transferencias entre cuentas.
 - Filtros avanzados de movimientos por cuenta, `source` y `accountAmount`.
+- Incluir los nombres de cuenta y categoria en la respuesta de movimientos (`include` de relaciones) para que el frontend no cruce listas ni dependa del tope de paginacion.
 - Estos filtros requieren cambios coordinados en DTOs, queries, contrato API y frontend.
 
 ### Rebanada 5: Nivel 2 (si el tiempo lo permite)

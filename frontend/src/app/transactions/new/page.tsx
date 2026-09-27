@@ -50,8 +50,8 @@ export default function NewTransactionPage() {
     async function load() {
       try {
         const [accountsRes, categoriesRes] = await Promise.all([
-          api.listAccounts(),
-          api.listCategories(),
+          api.listAccounts({ page: 1, limit: 100 }),
+          api.listCategories({ page: 1, limit: 100 }),
         ]);
         if (!cancelled) {
           setAccounts(accountsRes.data);
