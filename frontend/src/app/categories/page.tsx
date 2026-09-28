@@ -7,6 +7,7 @@ import Modal from "@/components/Dialog";
 import SelectField from "@/components/Select";
 import ColorPicker from "@/components/ColorPicker";
 import ActionsMenu from "@/components/ActionsMenu";
+import SkeletonList from "@/components/SkeletonList";
 import StatusFilter, {
   type StatusFilterValue,
 } from "@/components/StatusFilter";
@@ -197,12 +198,12 @@ export default function CategoriesPage() {
           <StatusFilter value={statusFilter} onChange={setStatusFilter} />
         </div>
 
-        {loading && <p className={styles.hint}>Cargando...</p>}
+        {loading && visible.length === 0 && <SkeletonList variant="category" />}
         {!loading && error && <p className={styles.error}>{error}</p>}
         {!loading && !error && visible.length === 0 && (
           <p className={styles.hint}>No hay categorías para mostrar.</p>
         )}
-        {!loading && !error && visible.length > 0 && (
+        {!error && visible.length > 0 && (
           <ul className={styles.list}>
             {visible.map((category) => (
               <li

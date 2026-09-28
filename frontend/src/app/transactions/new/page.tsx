@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { HiArrowLeft } from "react-icons/hi2";
 import Card from "@/components/Card";
 import TransactionForm from "@/components/TransactionForm";
+import Skeleton from "@/components/Skeleton";
+import skeletonStyles from "@/components/skeleton.module.css";
 import { api, ApiError } from "@/lib/api/client";
 import type {
   Account,
@@ -69,7 +71,14 @@ export default function NewTransactionPage() {
 
       <h1>Nuevo movimiento</h1>
 
-      {loading && <p className={styles.hint}>Cargando datos...</p>}
+      {loading && (
+        <div className={skeletonStyles.form}>
+          <Skeleton className={skeletonStyles.formFieldShort} />
+          <Skeleton className={skeletonStyles.formField} />
+          <Skeleton className={skeletonStyles.formField} />
+          <Skeleton className={skeletonStyles.formField} />
+        </div>
+      )}
       {!loading && error && <p className={styles.error}>{error}</p>}
 
       {!loading && !error && (

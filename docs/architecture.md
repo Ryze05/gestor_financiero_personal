@@ -214,7 +214,10 @@ Parametros de `GET /api/v1/transactions` en el MVP:
 - `from`: fecha inicial opcional.
 - `to`: fecha final opcional.
 - `categoryId`: categoria opcional.
+- `accountId`: cuenta opcional.
 - `type`: `INCOME` o `EXPENSE` opcional.
+- `source`: `WEB` u `OPENCLAW` opcional.
+- `minAmount` y `maxAmount`: rango opcional sobre `accountAmount`.
 - `search`: busqueda opcional por concepto (insensible a mayusculas).
 - `page` y `limit` para paginacion.
 
@@ -223,7 +226,7 @@ Notas de `transactions` en el MVP:
 - El borrado es **real** (no archivado): un movimiento es el final de la cadena y nadie lo referencia. Si pertenece a una transferencia (`transferId`), se rechaza con 409.
 - La creacion es **idempotente** por `externalId`: un reintento de OpenClaw devuelve el movimiento existente en vez de duplicarlo.
 - Validaciones: la cuenta debe existir y estar activa; la categoria debe existir, estar activa y ser compatible con el tipo.
-- En el MVP, la moneda del movimiento debe coincidir con la de su cuenta (`accountAmount = amount`, `exchangeRate = 1`). La conversion EUR/USD (Frankfurter) queda para la Rebanada 4.
+- La moneda del movimiento puede diferir de la cuenta: el backend conserva `amount` y calcula `accountAmount` y `exchangeRate` mediante el servicio de conversion EUR/USD.
 
 ### Categorias
 
@@ -447,7 +450,7 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 - Proyecto Next.js con CSS Modules (hecho).
 - Layout con sidebar responsive, temas claro/oscuro y tipografias (hecho).
 - Dashboard con selector de mes y de cuenta (hecho).
-- Listado de movimientos con filtros (texto, tipo, categoria y rango de fechas) y acciones de editar/borrar (hecho).
+- Listado de movimientos con filtros (texto, tipo, cuenta, categoria, origen, rango de fechas e importe de cuenta) y acciones de editar/borrar (hecho).
 - Alta de movimiento reutilizando `TransactionForm` (hecho).
 - Pantallas de cuentas y categorias con alta, archivar/restaurar y filtro por estado (hecho).
 - Estados de carga y errores mostrados en todos los listados (hecho).
@@ -464,13 +467,13 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 
 ### Rebanada 4: extras financieros
 
-- Conversion EUR/USD (pendiente).
-- Transferencias entre cuentas (backend hecho; frontend: listado, alta, borrado con confirmacion, movimientos marcados como `Transferencia` en Movimientos y selector de cuentas solo activas; pendiente editar `PATCH`).
-- Filtros avanzados de movimientos por cuenta (hecho), `source` y `accountAmount` (pendiente).
-- Incluir los nombres de cuenta y categoria en la respuesta de movimientos (`include` de relaciones) para que el frontend no cruce listas ni dependa del tope de paginacion (pendiente).
-- Estados de carga con skeleton en el primer pintado de listados y filtros (evitar parpadeos al restaurar la preferencia de cuenta) (pendiente).
+- Conversion EUR/USD (hecho).
+- Transferencias entre cuentas: listado, alta, edicion y borrado con confirmacion; movimientos marcados como `Transferencia` en Movimientos y selector de cuentas solo activas (hecho).
+- Filtros avanzados de movimientos por cuenta, `source` y `accountAmount` (hecho).
+- Nombres de cuenta y categoria en la respuesta de movimientos mediante `include` de relaciones (hecho).
+- Estados de carga con skeleton en listados y selectores para evitar parpadeos al restaurar la preferencia de cuenta (hecho).
 - Editar (`PATCH`) transferencias: actualizar la transferencia y sus dos movimientos enlazados de forma atomica (importe, fecha, cuentas y monedas) (hecho).
-- Estos filtros requieren cambios coordinados en DTOs, queries, contrato API y frontend.
+- Estos filtros se implementaron con cambios coordinados en DTOs, queries, contrato API y frontend.
 
 ### Rebanada 5: Nivel 2 (si el tiempo lo permite)
 

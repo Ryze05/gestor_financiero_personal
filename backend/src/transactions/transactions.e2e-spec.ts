@@ -163,6 +163,57 @@ describe('Transactions (e2e)', () => {
     );
   });
 
+  it('GET filtro source → 200', async () => {
+    const created = await createTransaction({
+      source: 'OPENCLAW',
+      externalId: `e2e-${randomUUID()}`,
+    });
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/transactions?source=OPENCLAW')
+      .expect(200);
+    expect(res.body.data.some((t: { id: string }) => t.id === created.id)).toBe(
+      true,
+    );
+    expect(
+      res.body.data.every((t: { source: string }) => t.source === 'OPENCLAW'),
+    ).toBe(true);
+  });
+
+  it('GET filtro source inválido → 400', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/transactions?source=OTRO')
+      .expect(400);
+  });
+
+  it('GET filtro accountAmount min/max → 200', async () => {
+    const created = await createTransaction({ amount: 50 });
+    const dentro = await request(app.getHttpServer())
+      .get('/api/v1/transactions?minAmount=10&maxAmount=100')
+      .expect(200);
+    expect(
+      dentro.body.data.some((t: { id: string }) => t.id === created.id),
+    ).toBe(true);
+
+    const fuera = await request(app.getHttpServer())
+      .get('/api/v1/transactions?minAmount=200')
+      .expect(200);
+    expect(fuera.body.data.some((t: { id: string }) => t.id === created.id)).toBe(
+      false,
+    );
+  });
+
+  it('GET minAmount con 3 decimales → 400', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/transactions?minAmount=1.234')
+      .expect(400);
+  });
+
+  it('GET minAmount negativo → 400', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/transactions?minAmount=-5')
+      .expect(400);
+  });
+
   it('POST válido → 201 con accountAmount y exchangeRate', async () => {
     const res = await post(
       '/api/v1/transactions',

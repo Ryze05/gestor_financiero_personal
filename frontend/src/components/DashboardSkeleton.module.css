@@ -1,0 +1,100 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-areas:
+    "balance balance balance income income income expense expense expense count count count"
+    "accumulated accumulated accumulated accumulated accumulated accumulated category category category category category category"
+    "timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline";
+  gap: 16px;
+}
+
+.metric,
+.chart {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.metric {
+  min-height: 126px;
+}
+
+.chart {
+  min-height: 330px;
+}
+
+.label {
+  width: 38%;
+  height: 14px;
+}
+
+.value {
+  width: 52%;
+  height: 32px;
+}
+
+.chartBody {
+  flex: 1;
+  width: 100%;
+  min-height: 240px;
+}
+
+.metric:nth-child(1) {
+  grid-area: balance;
+}
+
+.metric:nth-child(2) {
+  grid-area: income;
+}
+
+.metric:nth-child(3) {
+  grid-area: expense;
+}
+
+.metric:nth-child(4) {
+  grid-area: count;
+}
+
+.chart:nth-child(5) {
+  grid-area: accumulated;
+}
+
+.chart:nth-child(6) {
+  grid-area: category;
+}
+
+.chart:nth-child(7) {
+  grid-area: timeline;
+}
+
+@media (max-width: 1023px) {
+  .grid {
+    grid-template-areas:
+      "balance balance balance income income income expense expense expense count count count"
+      "accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated"
+      "category category category category category category category category category category category category"
+      "timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline";
+  }
+}
+
+@media (max-width: 767px) {
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "balance"
+      "income"
+      "expense"
+      "count"
+      "accumulated"
+      "category"
+      "timeline";
+  }
+
+  .chart {
+    min-height: 280px;
+  }
+}

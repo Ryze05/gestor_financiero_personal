@@ -318,6 +318,80 @@ describe('TransactionsService', () => {
         include: { account: true, category: true },
       });
     });
+
+    it('aplica el filtro por source', async () => {
+      prisma.transaction.findMany.mockResolvedValue([]);
+      prisma.transaction.count.mockResolvedValue(0);
+
+      await service.findAll({
+        page: 1,
+        limit: 20,
+        source: TransactionSource.OPENCLAW,
+      });
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+        where: { source: TransactionSource.OPENCLAW },
+        skip: 0,
+        take: 20,
+        orderBy: { date: 'desc' },
+        include: { account: true, category: true },
+      });
+    });
+
+    it('aplica el filtro por accountAmount (min/max)', async () => {
+      prisma.transaction.findMany.mockResolvedValue([]);
+      prisma.transaction.count.mockResolvedValue(0);
+
+      await service.findAll({
+        page: 1,
+        limit: 20,
+        minAmount: 10,
+        maxAmount: 100,
+      });
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+        where: {
+          accountAmount: {
+            gte: new Prisma.Decimal(10),
+            lte: new Prisma.Decimal(100),
+          },
+        },
+        skip: 0,
+        take: 20,
+        orderBy: { date: 'desc' },
+        include: { account: true, category: true },
+      });
+    });
+
+    it('aplica solo el filtro minAmount', async () => {
+      prisma.transaction.findMany.mockResolvedValue([]);
+      prisma.transaction.count.mockResolvedValue(0);
+
+      await service.findAll({ page: 1, limit: 20, minAmount: 50 });
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+        where: { accountAmount: { gte: new Prisma.Decimal(50) } },
+        skip: 0,
+        take: 20,
+        orderBy: { date: 'desc' },
+        include: { account: true, category: true },
+      });
+    });
+
+    it('aplica solo el filtro maxAmount', async () => {
+      prisma.transaction.findMany.mockResolvedValue([]);
+      prisma.transaction.count.mockResolvedValue(0);
+
+      await service.findAll({ page: 1, limit: 20, maxAmount: 25 });
+
+      expect(prisma.transaction.findMany).toHaveBeenCalledWith({
+        where: { accountAmount: { lte: new Prisma.Decimal(25) } },
+        skip: 0,
+        take: 20,
+        orderBy: { date: 'desc' },
+        include: { account: true, category: true },
+      });
+    });
   });
 
   describe('findOne', () => {

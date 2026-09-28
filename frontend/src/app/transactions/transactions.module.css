@@ -194,17 +194,47 @@
 
 .moreFilters {
   display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
   margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--border);
 }
 
-.categoryFilter {
+.categoryFilter,
+.sourceFilter {
   display: flex;
   flex-direction: column;
   gap: 6px;
   width: min(280px, 100%);
   color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.amountFilters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.amountFilter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 130px;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.amountFilter input {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--foreground);
+  font-family: var(--font-sans);
   font-size: var(--text-sm);
 }
 
@@ -397,6 +427,20 @@
 
   .chip,
   .chipActive {
+    flex: 1;
+  }
+
+  .categoryFilter,
+  .sourceFilter,
+  .amountFilter {
+    width: 100%;
+  }
+
+  .amountFilters {
+    width: 100%;
+  }
+
+  .amountFilter {
     flex: 1;
   }
 

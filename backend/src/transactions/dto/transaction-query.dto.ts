@@ -1,7 +1,18 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
-import { IsDateString, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
-import { TransactionType } from '../../generated/prisma/enums.js';
+import { Transform, Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+} from 'class-validator';
+import {
+  TransactionSource,
+  TransactionType,
+} from '../../generated/prisma/enums.js';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { normalizeName } from '../../common/transforms/normalize-name.transform.js';
 
@@ -36,4 +47,23 @@ export class TransactionQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @ApiPropertyOptional({ enum: TransactionSource })
+  @IsOptional()
+  @IsEnum(TransactionSource)
+  source?: TransactionSource;
+
+  @ApiPropertyOptional({ example: 10 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  minAmount?: number;
+
+  @ApiPropertyOptional({ example: 100 })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  maxAmount?: number;
 }

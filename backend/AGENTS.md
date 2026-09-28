@@ -79,7 +79,7 @@ pnpm prisma generate
 - Transfers have their own entity and endpoints and do not count as income or expense in dashboard totals.
 - `source` is `WEB` or `OPENCLAW`.
 - `externalId` provides idempotency for OpenClaw-created operations.
-- `transfers` creates an atomic `Transfer` plus its EXPENSE/INCOME movement pair. MVP transfers require same-currency active accounts; different currencies wait for Rebanada 4 conversion.
+- `transfers` creates an atomic `Transfer` plus its EXPENSE/INCOME movement pair. Transfers support active accounts and EUR/USD conversion.
 - Deleting a transfer cascades to its two linked transactions. Editing a transfer (`PATCH`) updates the transfer and its two linked transactions atomically.
 
 ## Testing

@@ -9,6 +9,8 @@ import BalanceChart from "@/components/BalanceChart";
 import TimelineChart from "@/components/TimelineChart";
 import MonthPicker from "@/components/MonthPicker";
 import SelectField from "@/components/Select";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
+import SkeletonSelect from "@/components/SkeletonSelect";
 import styles from "./dashboard.module.css";
 
 function monthRange(value: string): { from: string; to: string } {
@@ -112,23 +114,27 @@ export default function Home() {
       <div className={styles.controls}>
         <MonthPicker value={month} onChange={setMonth} />
         <div className={styles.accountFilter}>
-          <SelectField
-            value={accountId}
-            onChange={(value) => {
-              setAccountId(value);
-              window.localStorage.setItem("lastAccountId", value);
-            }}
-            placeholder="Selecciona una cuenta"
-            ariaLabel="Filtrar por cuenta"
-            options={accounts.map((account) => ({
-              value: account.id,
-              label: account.name,
-            }))}
-          />
+          {accountId ? (
+            <SelectField
+              value={accountId}
+              onChange={(value) => {
+                setAccountId(value);
+                window.localStorage.setItem("lastAccountId", value);
+              }}
+              placeholder="Selecciona una cuenta"
+              ariaLabel="Filtrar por cuenta"
+              options={accounts.map((account) => ({
+                value: account.id,
+                label: account.name,
+              }))}
+            />
+          ) : (
+            <SkeletonSelect />
+          )}
         </div>
       </div>
 
-      {loading && <p className={styles.hint}>Cargando...</p>}
+      {loading && <DashboardSkeleton />}
       {!loading && error && <p className={styles.error}>{error}</p>}
 
       {!loading && !error && data && (

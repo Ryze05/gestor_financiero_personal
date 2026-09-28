@@ -7,6 +7,7 @@ import Modal from "@/components/Dialog";
 import SelectField from "@/components/Select";
 import DatePicker from "@/components/DatePicker";
 import ActionsMenu from "@/components/ActionsMenu";
+import SkeletonList from "@/components/SkeletonList";
 import { api, ApiError } from "@/lib/api/client";
 import { formatMoney } from "@/lib/utils/money";
 import { toApiDate } from "@/lib/utils/date";
@@ -270,12 +271,12 @@ export default function TransfersPage() {
           <span className={styles.count}>{transfers.length}</span>
         </div>
 
-        {loading && <p className={styles.hint}>Cargando...</p>}
+        {loading && transfers.length === 0 && <SkeletonList />}
         {!loading && error && <p className={styles.error}>{error}</p>}
         {!loading && !error && transfers.length === 0 && (
           <p className={styles.hint}>No hay transferencias todavía.</p>
         )}
-        {!loading && !error && transfers.length > 0 && (
+        {!error && transfers.length > 0 && (
           <ul className={styles.list}>
             {transfers.map((transfer) => (
               <li key={transfer.id} className={styles.row}>

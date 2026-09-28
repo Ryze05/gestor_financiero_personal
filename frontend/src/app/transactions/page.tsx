@@ -15,6 +15,8 @@ import ActionsMenu from "@/components/ActionsMenu";
 import Modal from "@/components/Dialog";
 import TransactionForm from "@/components/TransactionForm";
 import SelectField from "@/components/Select";
+import SkeletonList from "@/components/SkeletonList";
+import SkeletonSelect from "@/components/SkeletonSelect";
 import { api, ApiError } from "@/lib/api/client";
 import { toApiDate } from "@/lib/utils/date";
 import { formatMoney } from "@/lib/utils/money";
@@ -23,6 +25,7 @@ import type {
   Category,
   Transaction,
   TransactionQuery,
+  TransactionSource,
   TransactionType,
 } from "@/lib/api/types";
 import styles from "./transactions.module.css";
@@ -33,8 +36,11 @@ export default function TransactionsPage() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [type, setType] = useState<TransactionType | "">("");
+  const [source, setSource] = useState<TransactionSource | "">("");
   const [categoryId, setCategoryId] = useState("");
   const [accountId, setAccountId] = useState("");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -112,16 +118,7 @@ export default function TransactionsPage() {
       setLoading(true);
       setError(null);
 
-      const query: TransactionQuery = {
-        from: toApiDate(from),
-        to: toApiDate(to),
-        search: search || undefined,
-        type: type || undefined,
-        categoryId: categoryId || undefined,
-        accountId: accountId || undefined,
-        page: 1,
-        limit: 20,
-      };
+      const query: TransactionQuery = buildQuery();
 
       try {
         const result = await api.listTransactions(query);
@@ -148,19 +145,39 @@ export default function TransactionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [search, type, categoryId, accountId, from, to, referencesLoaded]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, type, source, categoryId, accountId, minAmount, maxAmount, from, to, referencesLoaded]);
 
   function handleAccountChange(value: string) {
     setAccountId(value);
     window.localStorage.setItem("lastAccountId", value);
   }
 
+  function buildQuery(): TransactionQuery {
+    return {
+      from: toApiDate(from),
+      to: toApiDate(to),
+      search: search || undefined,
+      type: type || undefined,
+      source: source || undefined,
+      categoryId: categoryId || undefined,
+      accountId: accountId || undefined,
+      minAmount: Number(minAmount) > 0 ? Number(minAmount) : undefined,
+      maxAmount: Number(maxAmount) > 0 ? Number(maxAmount) : undefined,
+      page: 1,
+      limit: 20,
+    };
+  }
+
   function clearFilters() {
     setSearchInput("");
     setSearch("");
     setType("");
+    setSource("");
     setCategoryId("");
     setAccountId("");
+    setMinAmount("");
+    setMaxAmount("");
     setFrom(undefined);
     setTo(undefined);
     window.localStorage.setItem("lastAccountId", "");
@@ -170,8 +187,11 @@ export default function TransactionsPage() {
     Boolean(searchInput.trim()) ||
     Boolean(search.trim()) ||
     Boolean(type) ||
+    Boolean(source) ||
     Boolean(accountId) ||
     Boolean(categoryId) ||
+    Boolean(minAmount) ||
+    Boolean(maxAmount) ||
     Boolean(from) ||
     Boolean(to);
 
@@ -255,7 +275,7 @@ export default function TransactionsPage() {
           </div>
 
           <div className={styles.accountFilter}>
-            {referencesLoaded && (
+            {referencesLoaded ? (
               <SelectField
                 value={accountId || "all"}
                 onChange={(value) =>
@@ -273,6 +293,8 @@ export default function TransactionsPage() {
                     })),
                 ]}
               />
+            ) : (
+              <SkeletonSelect />
             )}
           </div>
 
@@ -308,6 +330,48 @@ export default function TransactionsPage() {
                 ]}
               />
             </label>
+
+            <label className={styles.sourceFilter}>
+              <span>Origen</span>
+              <SelectField
+                value={source || "all"}
+                onChange={(value) =>
+                  setSource(value === "all" ? "" : (value as TransactionSource))
+                }
+                placeholder="Todos los orígenes"
+                ariaLabel="Filtrar por origen"
+                options={[
+                  { value: "all", label: "Todos los orígenes" },
+                  { value: "WEB", label: "Web" },
+                  { value: "OPENCLAW", label: "OpenClaw" },
+                ]}
+              />
+            </label>
+
+            <div className={styles.amountFilters}>
+              <label className={styles.amountFilter}>
+                <span>Importe mínimo</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={minAmount}
+                  onChange={(event) => setMinAmount(event.target.value)}
+                />
+              </label>
+              <label className={styles.amountFilter}>
+                <span>Importe máximo</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  value={maxAmount}
+                  onChange={(event) => setMaxAmount(event.target.value)}
+                />
+              </label>
+            </div>
           </div>
         )}
       </Card>
@@ -321,7 +385,7 @@ export default function TransactionsPage() {
           <span className={styles.count}>{total} movimientos</span>
         </div>
 
-        {loading && <p className={styles.hint}>Cargando movimientos...</p>}
+        {loading && transactions.length === 0 && <SkeletonList />}
 
         {!loading && error && <p className={styles.error}>{error}</p>}
 
@@ -331,7 +395,7 @@ export default function TransactionsPage() {
           </div>
         )}
 
-        {!loading && !error && transactions.length > 0 && (
+        {!error && transactions.length > 0 && (
           <div className={styles.transactionList}>
             {transactions.map((transaction) => (
               <article key={transaction.id} className={styles.transactionRow}>
@@ -419,15 +483,7 @@ export default function TransactionsPage() {
             onSubmit={async (input) => {
               await api.updateTransaction(editing.id, input);
               setEditing(null);
-              const result = await api.listTransactions({
-                from: toApiDate(from),
-                to: toApiDate(to),
-                search: search || undefined,
-                type: type || undefined,
-                categoryId: categoryId || undefined,
-                page: 1,
-                limit: 20,
-              });
+              const result = await api.listTransactions(buildQuery());
               setTransactions(result.data);
               setTotal(result.total);
             }}
@@ -469,15 +525,7 @@ export default function TransactionsPage() {
               try {
                 await api.deleteTransaction(deleting.id);
                 setDeleting(null);
-                const result = await api.listTransactions({
-                  from: toApiDate(from),
-                  to: toApiDate(to),
-                  search: search || undefined,
-                  type: type || undefined,
-                  categoryId: categoryId || undefined,
-                  page: 1,
-                  limit: 20,
-                });
+                const result = await api.listTransactions(buildQuery());
                 setTransactions(result.data);
                 setTotal(result.total);
               } catch (err) {

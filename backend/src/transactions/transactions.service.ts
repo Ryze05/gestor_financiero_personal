@@ -57,7 +57,19 @@ export class TransactionsService {
   }
 
   async findAll(query: TransactionQueryDto) {
-    const { from, to, categoryId, accountId, type, search, page, limit } = query;
+    const {
+      from,
+      to,
+      categoryId,
+      accountId,
+      type,
+      source,
+      minAmount,
+      maxAmount,
+      search,
+      page,
+      limit,
+    } = query;
 
     const where: Prisma.TransactionWhereInput = {
       ...(from || to
@@ -71,6 +83,19 @@ export class TransactionsService {
       ...(categoryId && { categoryId }),
       ...(accountId && { accountId }),
       ...(type && { type }),
+      ...(source && { source }),
+      ...(minAmount !== undefined || maxAmount !== undefined
+        ? {
+            accountAmount: {
+              ...(minAmount !== undefined && {
+                gte: new Prisma.Decimal(minAmount),
+              }),
+              ...(maxAmount !== undefined && {
+                lte: new Prisma.Decimal(maxAmount),
+              }),
+            },
+          }
+        : {}),
       ...(search && { concept: { contains: search, mode: 'insensitive' } }),
     };
 

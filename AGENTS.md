@@ -10,7 +10,7 @@
 
 `backend/` and `frontend/` are independent pnpm projects, not a pnpm workspace: each has its own `package.json`, `pnpm-lock.yaml`, and `pnpm-workspace.yaml`, and there is no root `package.json`. Run package commands from inside `backend/` or `frontend/`.
 
-This is a single git repository (branch `main`). `.gitignore` rules are split across the root, `backend/`, and `frontend/`; generated artifacts (`dist/`, `backend/src/generated/prisma`, `*.tsbuildinfo`) and `.env` files must stay untracked.
+This is a single git repository (default branch `main`, no remote CI). Work happens on `feat/*` branches merged to `main` via PRs. `.gitignore` rules are split across the root, `backend/`, and `frontend/`; generated artifacts (`dist/`, `backend/src/generated/prisma`, `*.tsbuildinfo`) and `.env` files must stay untracked.
 
 ## Local Development
 

@@ -9,6 +9,9 @@ export interface TransactionQuery {
   categoryId?: string;
   accountId?: string;
   type?: TransactionType;
+  source?: TransactionSource;
+  minAmount?: number;
+  maxAmount?: number;
   search?: string;
   page?: number;
   limit?: number;

@@ -24,7 +24,7 @@
 - All requests go through `src/lib/api/client.ts` (`api.*` functions, fetch-based, no axios) with types in `src/lib/api/types.ts`.
 - The client throws `ApiError` (message + HTTP status + body). Network failure → status `0`, message "No se pudo conectar con el servidor."
 - Money values from Prisma arrive as **strings** (Decimal serialization). Type them as `string` and format with `formatMoney` (`src/lib/utils/money.ts`); render amounts with `var(--font-mono)`.
-- List endpoints accept `{ page, limit }` (backend default `20`, max `100`). Use `limit: 100` when you need the full set (e.g., resolving categories/accounts for selects).
+- List endpoints accept `{ page, limit }` (backend default `20`, max `100`). Transactions additionally accept `accountId`, `source`, `minAmount` and `maxAmount` (the latter two filter `accountAmount`). Use `limit: 100` when you need the full set (e.g., resolving categories/accounts for selects).
 - `toApiDate` (`src/lib/utils/date.ts`) formats a `Date` to `YYYY-MM-DD` for query/body params.
 - The backend must be running for data: `docker compose up -d` + `pnpm start:dev` in `backend/`. CORS is enabled only for `http://localhost:3000`.
 
@@ -41,9 +41,10 @@
 - Layout: `Sidebar` (desktop nav, ≥768px), `MobileNav` (top bar + bottom nav, <768px), `Card` (reusable panel with optional `title`).
 - Forms: `TransactionForm` (shared by create and edit), `Select` (Radix), `DatePicker` (Radix Popover), `ColorPicker`.
 - Lists: `ActionsMenu` (Radix dropdown with edit/archive actions), `StatusFilter` (active/archived/all chips), `MonthPicker`.
-- Transfers: `/transfers` lists and creates same-currency transfers through `api.listTransfers`/`api.createTransfer`; transfer movements remain visible in `/transactions` because they affect account balances.
+- Transfers: `/transfers` lists, creates, edits and deletes transfers through the typed API client; EUR/USD conversion is supported. Transfer movements remain visible in `/transactions` because they affect account balances.
 - `src/components/` = reusable UI; `src/lib/` = non-UI code (`api/`, `context/`, `utils/`).
 - Pages are Client Components when they hold state (`"use client"`); mutations call the API client directly and refresh state locally (no Server Actions).
+- Loading states use `Skeleton`, `SkeletonList`, `SkeletonSelect` and `DashboardSkeleton`; keep empty states behind `!loading` so they do not render alongside skeletons.
 
 ## Testing
 

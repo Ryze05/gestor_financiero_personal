@@ -52,7 +52,7 @@ El trabajo se organiza en rebanadas verticales: cada una entrega algo que funcio
 1. **Rebanada 1. Nucleo backend.** Modulos `accounts`, `categories` y `transactions`, DTOs con `class-validator`, TDD y endpoints bajo `/api/v1`.
 2. **Rebanada 2. Frontend funcional (Nivel 1).** Dashboard, listado, alta manual, edicion y filtros.
 3. **Rebanada 3. OpenClaw (Nivel 1).** Skill que lee un ticket, propone datos, pide confirmacion y crea el movimiento.
-4. **Rebanada 4. Extras financieros (fase final).** Conversion EUR/USD, completar la edicion de transferencias, filtros avanzados por `source` y `accountAmount` (el de cuenta ya esta implementado), incluir los nombres de cuenta y categoria en la respuesta de movimientos, y estados de carga (skeletons) en los listados para evitar parpadeos al restaurar la preferencia de cuenta. Las transferencias basicas ya estan implementadas en backend y frontend (listado, alta y borrado).
+4. **Rebanada 4. Extras financieros (fase final).** Conversion EUR/USD, edicion de transferencias, filtros avanzados por `source` y `accountAmount`, nombres de cuenta y categoria en la respuesta de movimientos, y estados de carga (skeletons) en los listados para evitar parpadeos al restaurar la preferencia de cuenta. Esta rebanada esta implementada en backend y frontend.
 5. **Rebanada 5. Nivel 2 (si el tiempo lo permite).** Entidad `Receipt` para agrupar por categoria.
 6. **Post-MVP. Nivel 3.** Lineas de producto.
 
@@ -339,9 +339,9 @@ Los nombres de campos, codigos de error y parametros se concretan en `docs/archi
 - Las categorias iniciales se cargan mediante seed.
 - La web permite consultar el dashboard y los gastos existentes.
 - La web permite crear, editar y eliminar gastos.
-- La web permite filtrar gastos por periodo, categoria y texto.
+- La web permite filtrar movimientos por periodo, cuenta, categoria, tipo, origen, importe de cuenta y texto.
 - La web permite gestionar categorias basicas sin romper los movimientos historicos.
-- La web permite crear y consultar transferencias entre cuentas.
+- La web permite crear, editar, consultar y eliminar transferencias entre cuentas.
 - Se puede registrar un gasto mediante `POST /api/v1/transactions`.
 - Se puede registrar un gasto a partir del flujo supervisado de OpenClaw.
 - La API permite listar gastos filtrando por periodo y categoria.
