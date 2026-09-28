@@ -86,15 +86,18 @@ finanzas_personales/
 │   │   └── types/
 │   ├── .env.local           (local, no versionado)
 │   └── package.json
-├── openclaw/
-│   ├── SKILL.md
-│   └── ejemplos/
+├── mcp/
+│   ├── src/
+│   │   ├── index.ts         (servidor MCP con los tools)
+│   │   └── api.ts           (cliente HTTP de la REST API)
+│   ├── README.md
+│   ├── .env.example
+│   └── package.json
 ├── docs/
 │   ├── specs.md
 │   └── architecture.md
 ├── docker-compose.yml
-├── .gitignore
-└── README.md
+└── .gitignore
 ```
 
 ## 4. Modelo de datos inicial
@@ -359,16 +362,19 @@ La API comprobara que las cuentas son distintas y activas. La salida y la entrad
 
 ## 7. Integracion con OpenClaw
 
-OpenClaw utilizara una skill ubicada en `openclaw/SKILL.md`. La skill describira:
+OpenClaw se integra mediante un **servidor MCP** en `mcp/` que expone la REST API como tools. No usa una skill y no toca PostgreSQL: `mcp/` es un cliente HTTP de la API, por lo que no le aplica CORS (esa restriccion es solo de navegadores).
 
-- La URL base de la API.
-- Como consultar categorias.
-- Como crear un gasto.
-- Como listar movimientos.
-- Como consultar el dashboard.
-- Que campos debe extraer de un ticket.
-- Que operaciones requieren confirmacion.
-- Como actuar ante errores o respuestas perdidas.
+Tools expuestos (ver `mcp/src/index.ts`):
+
+- `list_categories` — consultar categorias.
+- `list_accounts` — consultar cuentas activas con su moneda y saldo.
+- `list_transactions` — listar movimientos (filtros de fecha, tipo, texto e importe).
+- `list_transfers` — listar transferencias.
+- `get_dashboard` — resumen del periodo por cuenta.
+- `create_transaction` — registrar un gasto/ingreso con `source=OPENCLAW`.
+- `create_transfer` — registrar una transferencia.
+
+`create_transaction` y `create_transfer` requieren **confirmacion humana** antes de invocarse; las operaciones de lectura no. `create_transaction` fuerza `source=OPENCLAW` y usa `externalId` determinista (`ticket-...`) para ser idempotente.
 
 ### Extraccion de tickets
 
@@ -458,11 +464,10 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 
 ### Rebanada 3: OpenClaw (Nivel 1)
 
-- Crear `openclaw/SKILL.md`.
-- Documentar el contrato de la API.
-- Probar consultas de gastos.
-- Probar extraccion de ticket.
-- Añadir confirmacion antes de registrar.
+- Servidor MCP en `mcp/` que expone la REST API como tools (hecho).
+- Consultas de gastos y resumen del periodo (hecho).
+- Alta de movimientos desde ticket con confirmacion humana y `externalId` idempotente (hecho).
+- Alta de transferencias con confirmacion humana (hecho).
 - Probar reintentos y evitar duplicados con `externalId`.
 
 ### Rebanada 4: extras financieros
@@ -479,7 +484,7 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 
 - Entidad `Receipt` y `receiptId` en `Transaction`.
 - Agrupacion de movimientos por categoria.
-- Ajustar la skill de OpenClaw para proponer el desglose.
+- Ajustar los tools del servidor MCP para proponer el desglose.
 
 ### Post-MVP: Nivel 3
 
