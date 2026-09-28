@@ -20,8 +20,9 @@
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   grid-template-areas:
-    "balance balance balance balance balance income income income income expense expense expense"
-    "balance balance balance balance balance count count count category category category category";
+    "balance balance balance income income income expense expense expense count count count"
+    "accumulated accumulated accumulated accumulated accumulated accumulated category category category category category category"
+    "timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline";
   gap: 16px;
 }
 
@@ -41,49 +42,31 @@
   grid-area: count;
 }
 
+.accumulated {
+  grid-area: accumulated;
+}
+
+.timeline {
+  grid-area: timeline;
+}
+
 .category {
   grid-area: category;
 }
 
-.balanceAmount {
-  font-family: var(--font-mono);
-  font-size: 36px;
-  font-weight: 600;
-  margin-top: auto;
-}
-
-.amount {
-  font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.countNumber {
+.value {
   font-family: var(--font-mono);
   font-size: 28px;
   font-weight: 600;
+  margin-top: 24px;
 }
 
-.categoryList {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+.valuePositive {
+  color: var(--positive);
 }
 
-.categoryRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.categoryName {
-  color: var(--text-secondary);
-}
-
-.categoryTotal {
-  font-family: var(--font-mono);
+.valueNegative {
+  color: var(--negative);
 }
 
 .hint {
@@ -94,6 +77,16 @@
   color: var(--accent);
 }
 
+@media (max-width: 1023px) {
+  .grid {
+    grid-template-areas:
+      "balance balance balance income income income expense expense expense count count count"
+      "accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated"
+      "category category category category category category category category category category category category"
+      "timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline";
+  }
+}
+
 @media (max-width: 767px) {
   .grid {
     grid-template-columns: 1fr;
@@ -102,6 +95,12 @@
       "income"
       "expense"
       "count"
-      "category";
+      "accumulated"
+      "category"
+      "timeline";
+  }
+
+  .value {
+    font-size: 24px;
   }
 }

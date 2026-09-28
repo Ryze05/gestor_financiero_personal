@@ -124,6 +124,14 @@ export interface DashboardByCategory {
   total: string;
 }
 
+export interface DashboardTimelinePoint {
+  date: string;
+  income: string;
+  expense: string;
+  transferIn: string;
+  transferOut: string;
+}
+
 export interface DashboardSummary {
   from: string | null;
   to: string | null;
@@ -133,4 +141,5 @@ export interface DashboardSummary {
   balance: string;
   count: number;
   byCategory: DashboardByCategory[];
+  timeline: DashboardTimelinePoint[];
 }
