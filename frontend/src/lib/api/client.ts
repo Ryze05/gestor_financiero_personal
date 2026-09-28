@@ -96,6 +96,12 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  deleteAccount: (id: string) =>
+    request<void>(`/accounts/${id}`, { method: "DELETE" }),
+
+  restoreAccount: (id: string) =>
+    request<Account>(`/accounts/${id}/restore`, { method: "PATCH" }),
+
   //----------------------------------------------------------------------------  
     
   listCategories: (query?: { page?: number; limit?: number }) =>
@@ -106,4 +112,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+
+  deleteCategory: (id: string) =>
+    request<void>(`/categories/${id}`, { method: "DELETE" }),
+
+  restoreCategory: (id: string) =>
+    request<Category>(`/categories/${id}/restore`, { method: "PATCH" }),
 };

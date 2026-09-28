@@ -38,8 +38,7 @@
 
 .primaryButton,
 .secondaryButton,
-.filterButton,
-.dateFilter {
+.filterButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -65,7 +64,6 @@
 }
 
 .filterButton,
-.dateFilter,
 .secondaryButton {
   padding: 9px 12px;
   border: 1px solid var(--border);
@@ -93,7 +91,6 @@
 }
 
 .filterButton:hover,
-.dateFilter:hover,
 .secondaryButton:hover {
   border-color: var(--primary);
   color: var(--foreground);
@@ -183,19 +180,10 @@
   font-weight: 600;
 }
 
-.dateFilter {
-  flex: 0 0 140px;
-  min-height: 40px;
-}
-
 .dateFilters {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex: 0 0 auto;
-}
-
-.dateRangeField {
   flex: 0 0 auto;
 }
 
@@ -381,23 +369,12 @@
 
   .searchField,
   .typeFilters,
-  .dateFilter,
-  .dateFilters,
-  .dateRangeField {
+  .dateFilters {
     width: 100%;
   }
 
   .searchField {
     flex: 0 0 auto;
-  }
-
-  .dateRangeField > div {
-    width: 100%;
-  }
-
-  .dateRangeField button {
-    width: 100%;
-    justify-content: flex-start;
   }
 
   .dateFilters {
@@ -419,10 +396,6 @@
   .chip,
   .chipActive {
     flex: 1;
-  }
-
-  .dateFilter {
-    flex-basis: auto;
   }
 
   .count {

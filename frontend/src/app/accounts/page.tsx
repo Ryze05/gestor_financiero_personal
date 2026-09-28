@@ -1,10 +1,14 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { HiPlus } from "react-icons/hi2";
+import { HiArchiveBox, HiArrowUturnLeft, HiPlus } from "react-icons/hi2";
 import Card from "@/components/Card";
 import Modal from "@/components/Dialog";
 import SelectField from "@/components/Select";
+import ActionsMenu from "@/components/ActionsMenu";
+import StatusFilter, {
+  type StatusFilterValue,
+} from "@/components/StatusFilter";
 import { api, ApiError } from "@/lib/api/client";
 import { formatMoney } from "@/lib/utils/money";
 import type { Account, Currency } from "@/lib/api/types";
@@ -14,6 +18,9 @@ export default function AccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] =
+    useState<StatusFilterValue>("active");
 
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -26,7 +33,7 @@ export default function AccountsPage() {
 
     async function load() {
       try {
-        const res = await api.listAccounts();
+        const res = await api.listAccounts({ page: 1, limit: 100 });
         if (!cancelled) setAccounts(res.data);
       } catch (err) {
         if (!cancelled) {
@@ -46,6 +53,28 @@ export default function AccountsPage() {
       cancelled = true;
     };
   }, []);
+
+  async function toggleArchive(account: Account) {
+    if (busyId) return;
+    setBusyId(account.id);
+    try {
+      if (account.isArchived) {
+        await api.restoreAccount(account.id);
+      } else {
+        await api.deleteAccount(account.id);
+      }
+      const res = await api.listAccounts({ page: 1, limit: 100 });
+      setAccounts(res.data);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo actualizar la cuenta.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -73,7 +102,7 @@ export default function AccountsPage() {
       setName("");
       setInitialBalance("");
       setCurrency("EUR");
-      const res = await api.listAccounts();
+      const res = await api.listAccounts({ page: 1, limit: 100 });
       setAccounts(res.data);
       setOpen(false);
     } catch (err) {
@@ -84,6 +113,14 @@ export default function AccountsPage() {
       setSubmitting(false);
     }
   }
+
+  const visible = accounts.filter((account) =>
+    statusFilter === "all"
+      ? true
+      : statusFilter === "archived"
+        ? account.isArchived
+        : !account.isArchived,
+  );
 
   return (
     <div className={styles.page}>
@@ -157,25 +194,50 @@ export default function AccountsPage() {
       <Card>
         <div className={styles.listHeader}>
           <h2>Cuentas</h2>
-          <span className={styles.count}>{accounts.length}</span>
+          <span className={styles.count}>{visible.length}</span>
+        </div>
+
+        <div className={styles.statusFilter}>
+          <StatusFilter value={statusFilter} onChange={setStatusFilter} />
         </div>
 
         {loading && <p className={styles.hint}>Cargando...</p>}
         {!loading && error && <p className={styles.error}>{error}</p>}
-        {!loading && !error && accounts.length === 0 && (
-          <p className={styles.hint}>No hay cuentas todavía.</p>
+        {!loading && !error && visible.length === 0 && (
+          <p className={styles.hint}>No hay cuentas para mostrar.</p>
         )}
-        {!loading && !error && accounts.length > 0 && (
+        {!loading && !error && visible.length > 0 && (
           <ul className={styles.list}>
-            {accounts.map((account) => (
-              <li key={account.id} className={styles.row}>
+            {visible.map((account) => (
+              <li
+                key={account.id}
+                className={account.isArchived ? styles.archivedRow : styles.row}
+              >
                 <div className={styles.rowInfo}>
                   <strong>{account.name}</strong>
-                  <span>{account.currency}</span>
+                  <span>
+                    {account.currency}
+                    {account.isArchived ? " · Archivada" : ""}
+                  </span>
                 </div>
-                <span className={styles.balance}>
-                  {formatMoney(account.currentBalance, account.currency)}
-                </span>
+                <div className={styles.rowActions}>
+                  <span className={styles.balance}>
+                    {formatMoney(account.currentBalance, account.currency)}
+                  </span>
+                  <ActionsMenu
+                    items={[
+                      {
+                        label: account.isArchived ? "Restaurar" : "Archivar",
+                        icon: account.isArchived ? (
+                          <HiArrowUturnLeft />
+                        ) : (
+                          <HiArchiveBox />
+                        ),
+                        onSelect: () => toggleArchive(account),
+                      },
+                    ]}
+                  />
+                </div>
               </li>
             ))}
           </ul>

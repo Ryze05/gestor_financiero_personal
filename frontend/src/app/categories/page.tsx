@@ -1,11 +1,15 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { HiPlus } from "react-icons/hi2";
+import { HiArchiveBox, HiArrowUturnLeft, HiPlus } from "react-icons/hi2";
 import Card from "@/components/Card";
 import Modal from "@/components/Dialog";
 import SelectField from "@/components/Select";
 import ColorPicker from "@/components/ColorPicker";
+import ActionsMenu from "@/components/ActionsMenu";
+import StatusFilter, {
+  type StatusFilterValue,
+} from "@/components/StatusFilter";
 import { api, ApiError } from "@/lib/api/client";
 import type { Category, CategoryType } from "@/lib/api/types";
 import styles from "./categories.module.css";
@@ -20,6 +24,9 @@ export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] =
+    useState<StatusFilterValue>("active");
 
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -32,7 +39,7 @@ export default function CategoriesPage() {
 
     async function load() {
       try {
-        const res = await api.listCategories();
+        const res = await api.listCategories({ page: 1, limit: 100 });
         if (!cancelled) setCategories(res.data);
       } catch (err) {
         if (!cancelled) {
@@ -52,6 +59,28 @@ export default function CategoriesPage() {
       cancelled = true;
     };
   }, []);
+
+  async function toggleArchive(category: Category) {
+    if (busyId) return;
+    setBusyId(category.id);
+    try {
+      if (category.isArchived) {
+        await api.restoreCategory(category.id);
+      } else {
+        await api.deleteCategory(category.id);
+      }
+      const res = await api.listCategories({ page: 1, limit: 100 });
+      setCategories(res.data);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "No se pudo actualizar la categoría.",
+      );
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -74,7 +103,7 @@ export default function CategoriesPage() {
       setName("");
       setType("EXPENSE");
       setColor("");
-      const res = await api.listCategories();
+      const res = await api.listCategories({ page: 1, limit: 100 });
       setCategories(res.data);
       setOpen(false);
     } catch (err) {
@@ -87,6 +116,14 @@ export default function CategoriesPage() {
       setSubmitting(false);
     }
   }
+
+  const visible = categories.filter((category) =>
+    statusFilter === "all"
+      ? true
+      : statusFilter === "archived"
+        ? category.isArchived
+        : !category.isArchived,
+  );
 
   return (
     <div className={styles.page}>
@@ -153,18 +190,27 @@ export default function CategoriesPage() {
       <Card>
         <div className={styles.listHeader}>
           <h2>Categorías</h2>
-          <span className={styles.count}>{categories.length}</span>
+          <span className={styles.count}>{visible.length}</span>
+        </div>
+
+        <div className={styles.statusFilter}>
+          <StatusFilter value={statusFilter} onChange={setStatusFilter} />
         </div>
 
         {loading && <p className={styles.hint}>Cargando...</p>}
         {!loading && error && <p className={styles.error}>{error}</p>}
-        {!loading && !error && categories.length === 0 && (
-          <p className={styles.hint}>No hay categorías todavía.</p>
+        {!loading && !error && visible.length === 0 && (
+          <p className={styles.hint}>No hay categorías para mostrar.</p>
         )}
-        {!loading && !error && categories.length > 0 && (
+        {!loading && !error && visible.length > 0 && (
           <ul className={styles.list}>
-            {categories.map((category) => (
-              <li key={category.id} className={styles.row}>
+            {visible.map((category) => (
+              <li
+                key={category.id}
+                className={
+                  category.isArchived ? styles.archivedRow : styles.row
+                }
+              >
                 <div className={styles.rowInfo}>
                   <span
                     className={styles.swatch}
@@ -172,7 +218,25 @@ export default function CategoriesPage() {
                   />
                   <strong>{category.name}</strong>
                 </div>
-                <span className={styles.type}>{TYPE_LABEL[category.type]}</span>
+                <div className={styles.rowActions}>
+                  <span className={styles.type}>
+                    {TYPE_LABEL[category.type]}
+                    {category.isArchived ? " · Archivada" : ""}
+                  </span>
+                  <ActionsMenu
+                    items={[
+                      {
+                        label: category.isArchived ? "Restaurar" : "Archivar",
+                        icon: category.isArchived ? (
+                          <HiArrowUturnLeft />
+                        ) : (
+                          <HiArchiveBox />
+                        ),
+                        onSelect: () => toggleArchive(category),
+                      },
+                    ]}
+                  />
+                </div>
               </li>
             ))}
           </ul>
