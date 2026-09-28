@@ -7,10 +7,13 @@ import { AppModule } from '../app.module.js';
 import { setupApp } from '../app.setup.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 
+const MISSING_ID = '00000000-0000-0000-0000-000000000000';
+
 describe('Dashboard (e2e)', () => {
   let app: INestApplication<App>;
   let prisma: PrismaService;
   let accountId: string;
+  let usdAccountId: string;
   let expenseCategoryId: string;
   let expenseCategory2Id: string;
   let incomeCategoryId: string;
@@ -18,6 +21,10 @@ describe('Dashboard (e2e)', () => {
   const uniqueName = () => `e2e-${randomUUID()}`;
   const post = (path: string, body: object) =>
     request(app.getHttpServer()).post(path).send(body);
+  const dashboard = (query: string) =>
+    request(app.getHttpServer()).get(
+      `/api/v1/dashboard?accountId=${accountId}&${query}`,
+    );
 
   const createTransaction = (overrides: object = {}) =>
     post('/api/v1/transactions', {
@@ -56,6 +63,12 @@ describe('Dashboard (e2e)', () => {
     }).expect(201);
     accountId = account.body.id;
 
+    const usdAccount = await post('/api/v1/accounts', {
+      name: uniqueName(),
+      currency: 'USD',
+    }).expect(201);
+    usdAccountId = usdAccount.body.id;
+
     expenseCategoryId = await createCategory('EXPENSE');
     expenseCategory2Id = await createCategory('EXPENSE');
     incomeCategoryId = await createCategory('INCOME');
@@ -75,9 +88,7 @@ describe('Dashboard (e2e)', () => {
   });
 
   it('sin movimientos en el periodo → ceros', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard?from=2000-01-01&to=2000-01-31')
-      .expect(200);
+    const res = await dashboard('from=2000-01-01&to=2000-01-31').expect(200);
 
     expect(res.body).toEqual({
       from: '2000-01-01',
@@ -104,9 +115,7 @@ describe('Dashboard (e2e)', () => {
       date: '2000-02-15',
     }).expect(201);
 
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard?from=2000-02-01&to=2000-02-28')
-      .expect(200);
+    const res = await dashboard('from=2000-02-01&to=2000-02-28').expect(200);
 
     expect(res.body.income).toBe('100');
     expect(res.body.expense).toBe('40');
@@ -139,9 +148,7 @@ describe('Dashboard (e2e)', () => {
       date: '2000-03-15',
     }).expect(201);
 
-    const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard?from=2000-03-01&to=2000-03-31')
-      .expect(200);
+    const res = await dashboard('from=2000-03-01&to=2000-03-31').expect(200);
 
     const byCategory = res.body.byCategory as {
       categoryId: string;
@@ -159,23 +166,32 @@ describe('Dashboard (e2e)', () => {
     ).toBe('30');
   });
 
-  it('filtra por moneda (USD sin datos) → ceros', async () => {
+  it('filtra por cuenta (otra cuenta sin datos) → ceros', async () => {
     const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard?from=2000-02-01&to=2000-02-28&currency=USD')
+      .get(
+        `/api/v1/dashboard?accountId=${usdAccountId}&from=2000-02-01&to=2000-02-28`,
+      )
       .expect(200);
 
     expect(res.body.count).toBe(0);
+    expect(res.body.currency).toBe('USD');
   });
 
-  it('currency inválida → 400', async () => {
+  it('cuenta inexistente → 404', async () => {
     await request(app.getHttpServer())
-      .get('/api/v1/dashboard?currency=GBP')
+      .get(`/api/v1/dashboard?accountId=${MISSING_ID}`)
+      .expect(404);
+  });
+
+  it('accountId inválido → 400', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/dashboard?accountId=no-es-uuid')
       .expect(400);
   });
 
   it('fecha inválida → 400', async () => {
     await request(app.getHttpServer())
-      .get('/api/v1/dashboard?from=no-es-fecha')
+      .get(`/api/v1/dashboard?accountId=${accountId}&from=no-es-fecha`)
       .expect(400);
   });
 });

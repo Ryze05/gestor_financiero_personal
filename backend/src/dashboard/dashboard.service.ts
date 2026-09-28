@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { DashboardQueryDto } from './dto/dashboard-query.dto.js';
@@ -8,11 +8,19 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   async get(query: DashboardQueryDto) {
-    const { from, to, currency } = query;
+    const { accountId, from, to } = query;
+
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
+    });
+    if (!account) {
+      throw new NotFoundException('Cuenta no encontrada.');
+    }
 
     const where: Prisma.TransactionWhereInput = {
       transferId: null,
-      currency,
+      accountId,
+      currency: account.currency,
       ...(from || to
         ? {
             date: {
@@ -72,7 +80,7 @@ export class DashboardService {
     return {
       from: from ?? null,
       to: to ?? null,
-      currency,
+      currency: account.currency,
       income: income.toString(),
       expense: expense.toString(),
       balance: income.minus(expense).toString(),

@@ -1,8 +1,11 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsEnum, IsOptional } from 'class-validator';
-import { Currency } from '../../generated/prisma/enums.js';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsOptional, IsUUID } from 'class-validator';
 
 export class DashboardQueryDto {
+  @ApiProperty()
+  @IsUUID()
+  accountId!: string;
+
   @ApiPropertyOptional({ example: '2026-09-01' })
   @IsOptional()
   @IsDateString()
@@ -12,9 +15,4 @@ export class DashboardQueryDto {
   @IsOptional()
   @IsDateString()
   to?: string;
-
-  @ApiPropertyOptional({ enum: Currency, default: Currency.EUR })
-  @IsOptional()
-  @IsEnum(Currency)
-  currency: Currency = Currency.EUR;
 }

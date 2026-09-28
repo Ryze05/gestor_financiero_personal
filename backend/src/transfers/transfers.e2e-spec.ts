@@ -172,7 +172,7 @@ describe('Transfers (e2e)', () => {
     await createTransfer({ date: TRANSFER_DATE });
 
     const dashboard = await get(
-      `/api/v1/dashboard?from=${TRANSFER_DATE}&to=${TRANSFER_DATE}&currency=EUR`,
+      `/api/v1/dashboard?accountId=${eurAccountId}&from=${TRANSFER_DATE}&to=${TRANSFER_DATE}`,
     ).expect(200);
 
     expect(dashboard.body.count).toBe(0);
