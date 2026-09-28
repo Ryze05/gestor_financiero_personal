@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { HiArrowsRightLeft, HiTrash } from "react-icons/hi2";
+import { HiArrowsRightLeft, HiPencil, HiTrash } from "react-icons/hi2";
 import Card from "@/components/Card";
 import Modal from "@/components/Dialog";
 import SelectField from "@/components/Select";
@@ -18,6 +18,7 @@ export default function TransfersPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,51 +68,77 @@ export default function TransfersPage() {
   const [deleting, setDeleting] = useState<Transfer | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [deletingError, setDeletingError] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Transfer | null>(null);
 
   const sourceAccount = accounts.find((a) => a.id === sourceAccountId);
   const currency: Currency = sourceAccount?.currency ?? "EUR";
+
+  function resetForm() {
+    setEditing(null);
+    setSourceAccountId("");
+    setDestinationAccountId("");
+    setAmount("");
+    setConcept("");
+    setDate(new Date());
+    setFormError(null);
+  }
+
+  function startEdit(transfer: Transfer) {
+    setEditing(transfer);
+    setSourceAccountId(transfer.sourceAccountId);
+    setDestinationAccountId(transfer.destinationAccountId);
+    setAmount(transfer.amount);
+    setDate(new Date(transfer.date));
+    setConcept(transfer.concept ?? "");
+    setFormError(null);
+    setOpen(true);
+  }
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (submitting) return;
 
-    if (!sourceAccountId) return setError("Selecciona la cuenta de origen.");
+    if (!sourceAccountId) return setFormError("Selecciona la cuenta de origen.");
     if (!destinationAccountId) {
-      return setError("Selecciona la cuenta de destino.");
+      return setFormError("Selecciona la cuenta de destino.");
     }
     if (sourceAccountId === destinationAccountId) {
-      return setError("Las cuentas deben ser distintas.");
+      return setFormError("Las cuentas deben ser distintas.");
     }
     const destination = accounts.find((a) => a.id === destinationAccountId);
     if (sourceAccount?.currency !== destination?.currency) {
-      return setError("La conversión de divisa aún no está disponible.");
+      return setFormError("La conversión de divisa aún no está disponible.");
     }
     const value = Number(amount);
-    if (!value || value <= 0) return setError("Introduce un importe válido.");
-    if (!date) return setError("Selecciona una fecha.");
+    if (!value || value <= 0) {
+      return setFormError("Introduce un importe válido.");
+    }
+    if (!date) return setFormError("Selecciona una fecha.");
 
     setSubmitting(true);
-    setError(null);
+    setFormError(null);
     try {
-      await api.createTransfer({
+      const payload = {
         amount: value,
         date: toApiDate(date)!,
         sourceAccountId,
         destinationAccountId,
         concept: concept.trim() || undefined,
-      });
+      };
+      if (editing) {
+        await api.updateTransfer(editing.id, payload);
+      } else {
+        await api.createTransfer(payload);
+      }
       const res = await api.listTransfers({ page: 1, limit: 100 });
       setTransfers(res.data);
       setOpen(false);
-      setSourceAccountId("");
-      setDestinationAccountId("");
-      setAmount("");
-      setConcept("");
+      resetForm();
     } catch (err) {
-      setError(
+      setFormError(
         err instanceof ApiError
           ? err.message
-          : "No se pudo crear la transferencia.",
+          : "No se pudo guardar la transferencia.",
       );
     } finally {
       setSubmitting(false);
@@ -146,9 +173,17 @@ export default function TransfersPage() {
         </div>
 
         <Modal
-          title="Nueva transferencia"
+          title={editing ? "Editar transferencia" : "Nueva transferencia"}
           open={open}
-          onOpenChange={setOpen}
+          onOpenChange={(value) => {
+            if (value) {
+              resetForm();
+            } else {
+              setEditing(null);
+              setFormError(null);
+            }
+            setOpen(value);
+          }}
           trigger={
             <button type="button" className={styles.primaryButton}>
               <HiArrowsRightLeft />
@@ -214,14 +249,20 @@ export default function TransfersPage() {
               />
             </label>
 
-            {error && <p className={styles.error}>{error}</p>}
+            {formError && <p className={styles.error}>{formError}</p>}
 
             <button
               type="submit"
               className={styles.primaryButton}
               aria-disabled={submitting}
             >
-              {submitting ? "Creando..." : "Crear transferencia"}
+              {submitting
+              ? editing
+                ? "Guardando..."
+                : "Creando..."
+              : editing
+                ? "Guardar cambios"
+                : "Crear transferencia"}
             </button>
           </form>
         </Modal>
@@ -257,6 +298,11 @@ export default function TransfersPage() {
                   <ActionsMenu
                     ariaLabel={`Acciones de ${transfer.concept ?? "transferencia"}`}
                     items={[
+                      {
+                        label: "Editar",
+                        icon: <HiPencil />,
+                        onSelect: () => startEdit(transfer),
+                      },
                       {
                         label: "Eliminar",
                         icon: <HiTrash />,

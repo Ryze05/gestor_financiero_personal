@@ -10,6 +10,7 @@ import type {
   Transfer,
   TransferQuery,
   UpdateTransactionInput,
+  UpdateTransferInput,
 } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/api/v1";
@@ -130,6 +131,12 @@ export const api = {
   createTransfer: (body: CreateTransferInput) =>
     request<Transfer>("/transfers", {
       method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  updateTransfer: (id: string, body: UpdateTransferInput) =>
+    request<Transfer>(`/transfers/${id}`, {
+      method: "PATCH",
       body: JSON.stringify(body),
     }),
 

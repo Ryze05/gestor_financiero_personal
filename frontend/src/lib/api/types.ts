@@ -64,6 +64,8 @@ export interface CreateTransferInput {
   concept?: string;
 }
 
+export type UpdateTransferInput = Partial<CreateTransferInput>;
+
 export interface AccountBase {
   id: string;
   name: string;

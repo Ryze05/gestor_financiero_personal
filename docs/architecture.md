@@ -469,7 +469,7 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 - Filtros avanzados de movimientos por cuenta (hecho), `source` y `accountAmount` (pendiente).
 - Incluir los nombres de cuenta y categoria en la respuesta de movimientos (`include` de relaciones) para que el frontend no cruce listas ni dependa del tope de paginacion (pendiente).
 - Estados de carga con skeleton en el primer pintado de listados y filtros (evitar parpadeos al restaurar la preferencia de cuenta) (pendiente).
-- Editar (`PATCH`) transferencias: actualizar la transferencia y sus dos movimientos enlazados de forma atomica (importe, fecha, cuentas y monedas) (pendiente).
+- Editar (`PATCH`) transferencias: actualizar la transferencia y sus dos movimientos enlazados de forma atomica (importe, fecha, cuentas y monedas) (hecho).
 - Estos filtros requieren cambios coordinados en DTOs, queries, contrato API y frontend.
 
 ### Rebanada 5: Nivel 2 (si el tiempo lo permite)
