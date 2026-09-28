@@ -1,0 +1,208 @@
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { randomUUID } from 'node:crypto';
+import request from 'supertest';
+import { App } from 'supertest/types';
+import { AppModule } from '../app.module.js';
+import { setupApp } from '../app.setup.js';
+import { PrismaService } from '../prisma/prisma.service.js';
+
+const MISSING_ID = '00000000-0000-0000-0000-000000000000';
+const TRANSFER_DATE = '2000-01-15';
+
+describe('Transfers (e2e)', () => {
+  let app: INestApplication<App>;
+  let prisma: PrismaService;
+  let eurAccountId: string;
+  let otherEurAccountId: string;
+  let usdAccountId: string;
+
+  const post = (path: string, body: object) =>
+    request(app.getHttpServer()).post(path).send(body);
+  const get = (path: string) => request(app.getHttpServer()).get(path);
+  const del = (path: string) => request(app.getHttpServer()).delete(path);
+
+  const uniqueName = () => `e2e-${randomUUID()}`;
+
+  const validTransfer = (overrides: object = {}) => ({
+    amount: 25,
+    date: TRANSFER_DATE,
+    concept: uniqueName(),
+    sourceAccountId: eurAccountId,
+    destinationAccountId: otherEurAccountId,
+    ...overrides,
+  });
+
+  const createTransfer = async (overrides: object = {}) =>
+    (await post('/api/v1/transfers', validTransfer(overrides)).expect(201))
+      .body;
+
+  beforeAll(async () => {
+    const moduleFixture = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    setupApp(app);
+    await app.init();
+
+    prisma = app.get(PrismaService);
+
+    eurAccountId = (
+      await post('/api/v1/accounts', {
+        name: uniqueName(),
+        currency: 'EUR',
+      }).expect(201)
+    ).body.id;
+    otherEurAccountId = (
+      await post('/api/v1/accounts', {
+        name: uniqueName(),
+        currency: 'EUR',
+      }).expect(201)
+    ).body.id;
+    usdAccountId = (
+      await post('/api/v1/accounts', {
+        name: uniqueName(),
+        currency: 'USD',
+      }).expect(201)
+    ).body.id;
+  });
+
+  afterAll(async () => {
+    await prisma.transaction.deleteMany({
+      where: { concept: { startsWith: 'e2e-' } },
+    });
+    await prisma.transfer.deleteMany({
+      where: { concept: { startsWith: 'e2e-' } },
+    });
+    await prisma.account.deleteMany({
+      where: { name: { startsWith: 'e2e-' } },
+    });
+    await app.close();
+  });
+
+  it('POST crea la transferencia y sus dos movimientos enlazados → 201', async () => {
+    const created = await createTransfer();
+
+    const detail = await get(`/api/v1/transfers/${created.id}`).expect(200);
+    expect(detail.body.transactions).toHaveLength(2);
+
+    const types = detail.body.transactions.map((t: { type: string }) => t.type);
+    expect(types).toContain('EXPENSE');
+    expect(types).toContain('INCOME');
+    for (const transaction of detail.body.transactions) {
+      expect(transaction.transferId).toBe(created.id);
+    }
+  });
+
+  it('GET paginado → 200', async () => {
+    const res = await get('/api/v1/transfers').expect(200);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(typeof res.body.total).toBe('number');
+  });
+
+  it('GET filtra por search', async () => {
+    const created = await createTransfer();
+    const res = await get(
+      `/api/v1/transfers?search=${created.concept}`,
+    ).expect(200);
+    expect(res.body.data).toHaveLength(1);
+    expect(res.body.data[0].id).toBe(created.id);
+  });
+
+  it('GET :id inexistente → 404', async () => {
+    await get(`/api/v1/transfers/${MISSING_ID}`).expect(404);
+  });
+
+  it('GET :id no uuid → 400', async () => {
+    await get('/api/v1/transfers/not-a-uuid').expect(400);
+  });
+
+  it('rechaza cuentas iguales → 400', async () => {
+    await post(
+      '/api/v1/transfers',
+      validTransfer({ destinationAccountId: eurAccountId }),
+    ).expect(400);
+  });
+
+  it('rechaza monedas distintas → 400', async () => {
+    await post(
+      '/api/v1/transfers',
+      validTransfer({ destinationAccountId: usdAccountId }),
+    ).expect(400);
+  });
+
+  it('rechaza cuenta inexistente → 400', async () => {
+    await post(
+      '/api/v1/transfers',
+      validTransfer({ sourceAccountId: MISSING_ID }),
+    ).expect(400);
+  });
+
+  it('rechaza cuenta archivada → 400', async () => {
+    const archived = await post('/api/v1/accounts', {
+      name: uniqueName(),
+      currency: 'EUR',
+    }).expect(201);
+    await del(`/api/v1/accounts/${archived.body.id}`).expect(200);
+
+    await post(
+      '/api/v1/transfers',
+      validTransfer({ sourceAccountId: archived.body.id }),
+    ).expect(400);
+  });
+
+  it('rechaza body invalido → 400', async () => {
+    await post('/api/v1/transfers', validTransfer({ amount: 'mucho' })).expect(
+      400,
+    );
+    await post(
+      '/api/v1/transfers',
+      validTransfer({ sourceAccountId: 'not-a-uuid' }),
+    ).expect(400);
+    await post(
+      '/api/v1/transfers',
+      validTransfer({ unknownField: true }),
+    ).expect(400);
+  });
+
+  it('los movimientos de la transferencia NO cuentan en el dashboard', async () => {
+    await createTransfer({ date: TRANSFER_DATE });
+
+    const dashboard = await get(
+      `/api/v1/dashboard?from=${TRANSFER_DATE}&to=${TRANSFER_DATE}&currency=EUR`,
+    ).expect(200);
+
+    expect(dashboard.body.count).toBe(0);
+    expect(dashboard.body.income).toBe('0');
+    expect(dashboard.body.expense).toBe('0');
+  });
+
+  it('no permite borrar un movimiento de una transferencia → 409', async () => {
+    const created = await createTransfer();
+    const detail = await get(`/api/v1/transfers/${created.id}`).expect(200);
+    const transactionId = detail.body.transactions[0].id;
+
+    await del(`/api/v1/transactions/${transactionId}`).expect(409);
+  });
+
+  it('DELETE borra la transferencia y sus movimientos (cascada)', async () => {
+    const created = await createTransfer();
+
+    await del(`/api/v1/transfers/${created.id}`).expect(200);
+    await get(`/api/v1/transfers/${created.id}`).expect(404);
+
+    const movements = await get(
+      `/api/v1/transactions?search=${created.concept}`,
+    ).expect(200);
+    expect(movements.body.total).toBe(0);
+  });
+
+  it('DELETE :id inexistente → 404', async () => {
+    await del(`/api/v1/transfers/${MISSING_ID}`).expect(404);
+  });
+
+  it('DELETE :id no uuid → 400', async () => {
+    await del('/api/v1/transfers/not-a-uuid').expect(400);
+  });
+});

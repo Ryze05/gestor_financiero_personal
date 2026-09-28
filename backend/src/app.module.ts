@@ -6,6 +6,7 @@ import { PrismaModule } from './prisma/prisma.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
 import { AccountsModule } from './accounts/accounts.module.js';
 import { TransactionsModule } from './transactions/transactions.module.js';
+import { TransfersModule } from './transfers/transfers.module.js';
 import { DashboardModule } from './dashboard/dashboard.module.js';
 
 @Module({
@@ -20,6 +21,7 @@ import { DashboardModule } from './dashboard/dashboard.module.js';
     CategoriesModule,
     AccountsModule,
     TransactionsModule,
+    TransfersModule,
     DashboardModule,
   ],
 })

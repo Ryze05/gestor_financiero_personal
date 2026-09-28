@@ -96,11 +96,16 @@ describe('Dashboard (e2e)', () => {
       type: 'INCOME',
       amount: 100,
       categoryId: incomeCategoryId,
+      date: '2000-02-15',
     }).expect(201);
-    await createTransaction({ type: 'EXPENSE', amount: 40 }).expect(201);
+    await createTransaction({
+      type: 'EXPENSE',
+      amount: 40,
+      date: '2000-02-15',
+    }).expect(201);
 
     const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard?from=2026-09-01&to=2026-09-30')
+      .get('/api/v1/dashboard?from=2000-02-01&to=2000-02-28')
       .expect(200);
 
     expect(res.body.income).toBe('100');
@@ -119,23 +124,23 @@ describe('Dashboard (e2e)', () => {
       type: 'EXPENSE',
       amount: 20,
       categoryId: expenseCategoryId,
-      date: '2026-08-15',
+      date: '2000-03-15',
     }).expect(201);
     await createTransaction({
       type: 'EXPENSE',
       amount: 30,
       categoryId: expenseCategory2Id,
-      date: '2026-08-15',
+      date: '2000-03-15',
     }).expect(201);
     await createTransaction({
       type: 'INCOME',
       amount: 500,
       categoryId: incomeCategoryId,
-      date: '2026-08-15',
+      date: '2000-03-15',
     }).expect(201);
 
     const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard?from=2026-08-01&to=2026-08-31')
+      .get('/api/v1/dashboard?from=2000-03-01&to=2000-03-31')
       .expect(200);
 
     const byCategory = res.body.byCategory as {
@@ -156,7 +161,7 @@ describe('Dashboard (e2e)', () => {
 
   it('filtra por moneda (USD sin datos) → ceros', async () => {
     const res = await request(app.getHttpServer())
-      .get('/api/v1/dashboard?from=2026-09-01&to=2026-09-30&currency=USD')
+      .get('/api/v1/dashboard?from=2000-02-01&to=2000-02-28&currency=USD')
       .expect(200);
 
     expect(res.body.count).toBe(0);

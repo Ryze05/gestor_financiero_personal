@@ -207,6 +207,7 @@ La API se servira desde NestJS con prefijo global `/api/v1`.
 - `POST /api/v1/transfers`
 - `GET /api/v1/transfers`
 - `GET /api/v1/transfers/:id`
+- `DELETE /api/v1/transfers/:id` (borra la transferencia y, en cascada, sus dos movimientos)
 
 Parametros de `GET /api/v1/transactions` en el MVP:
 
@@ -467,6 +468,7 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 - Transferencias entre cuentas.
 - Filtros avanzados de movimientos por cuenta, `source` y `accountAmount`.
 - Incluir los nombres de cuenta y categoria en la respuesta de movimientos (`include` de relaciones) para que el frontend no cruce listas ni dependa del tope de paginacion.
+- Editar (`PATCH`) transferencias: actualizar la transferencia y sus dos movimientos enlazados de forma atomica (importe, fecha, cuentas y monedas).
 - Estos filtros requieren cambios coordinados en DTOs, queries, contrato API y frontend.
 
 ### Rebanada 5: Nivel 2 (si el tiempo lo permite)
