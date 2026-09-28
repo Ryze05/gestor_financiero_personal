@@ -6,8 +6,17 @@ import { App } from 'supertest/types';
 import { AppModule } from '../app.module.js';
 import { setupApp } from '../app.setup.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
+import { Prisma } from '../generated/prisma/client.js';
 
 const MISSING_ID = '00000000-0000-0000-0000-000000000000';
+
+const fxStub = {
+  getRate: async (from: string, to: string) =>
+    new Prisma.Decimal(from === 'EUR' && to === 'USD' ? '1.08' : '0.9195'),
+  convert: (amount: Prisma.Decimal, rate: Prisma.Decimal) =>
+    amount.times(rate).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+};
 
 describe('Transactions (e2e)', () => {
   let app: INestApplication<App>;
@@ -42,7 +51,10 @@ describe('Transactions (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ExchangeRateService)
+      .useValue(fxStub)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     setupApp(app);
@@ -282,11 +294,14 @@ describe('Transactions (e2e)', () => {
     ).expect(400);
   });
 
-  it('POST moneda distinta a la cuenta → 400', async () => {
-    await post(
+  it('POST moneda distinta a la cuenta → 201 con conversión', async () => {
+    const res = await post(
       '/api/v1/transactions',
-      validTransaction({ currency: 'USD' }),
-    ).expect(400);
+      validTransaction({ amount: 23.4, currency: 'USD' }),
+    ).expect(201);
+    expect(res.body.currency).toBe('USD');
+    expect(res.body.accountAmount).toBe('21.52');
+    expect(res.body.exchangeRate).toBe('0.9195');
   });
 
   it('POST OPENCLAW sin externalId → 400', async () => {
@@ -363,6 +378,17 @@ describe('Transactions (e2e)', () => {
       .expect(200);
     expect(res.body.concept).toBe('e2e-editado');
     expect(res.body.accountAmount).toBe('50');
+  });
+
+  it('PATCH cambia la moneda y recalcula accountAmount → 200', async () => {
+    const created = await createTransaction();
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/transactions/${created.id}`)
+      .send({ currency: 'USD', amount: 50 })
+      .expect(200);
+    expect(res.body.currency).toBe('USD');
+    expect(res.body.accountAmount).toBe('45.98');
+    expect(res.body.exchangeRate).toBe('0.9195');
   });
 
   it('PATCH inválido → 400', async () => {

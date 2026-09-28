@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { TransactionsService } from './transactions.service.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import {
   CategoryType,
@@ -25,6 +26,11 @@ describe('TransactionsService', () => {
       delete: vi.fn(),
     },
   };
+  const exchangeRate = {
+    getRate: vi.fn(),
+    convert: (amount: Prisma.Decimal, rate: Prisma.Decimal) =>
+      amount.times(rate).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+  };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -32,6 +38,7 @@ describe('TransactionsService', () => {
       providers: [
         TransactionsService,
         { provide: PrismaService, useValue: prisma },
+        { provide: ExchangeRateService, useValue: exchangeRate },
       ],
     }).compile();
 
@@ -80,6 +87,7 @@ describe('TransactionsService', () => {
       expect(args.data.concept).toBe('Compra');
       expect(args.data.accountId).toBe('acc1');
       expect(args.data.categoryId).toBe('cat1');
+      expect(exchangeRate.getRate).not.toHaveBeenCalled();
     });
   });
 
@@ -150,10 +158,10 @@ describe('TransactionsService', () => {
       ).resolves.toEqual({ id: 't1' });
     });
 
-    it('rechaza moneda distinta a la de la cuenta', async () => {
+    it('convierte cuando la moneda difiere de la de la cuenta', async () => {
       prisma.account.findUnique.mockResolvedValue({
         id: 'acc1',
-        currency: Currency.USD,
+        currency: Currency.EUR,
         isArchived: false,
       });
       prisma.category.findUnique.mockResolvedValue({
@@ -161,8 +169,48 @@ describe('TransactionsService', () => {
         type: CategoryType.EXPENSE,
         isArchived: false,
       });
+      exchangeRate.getRate.mockResolvedValue(new Prisma.Decimal('0.9195'));
+      const creada = { id: 't1' };
+      prisma.transaction.create.mockResolvedValue(creada);
 
-      await expect(service.create(baseDto)).rejects.toThrow(BadRequestException);
+      const result = await service.create({
+        ...baseDto,
+        currency: Currency.USD,
+      });
+
+      expect(exchangeRate.getRate).toHaveBeenCalledWith(
+        Currency.USD,
+        Currency.EUR,
+      );
+      expect(result).toEqual(creada);
+      const args = prisma.transaction.create.mock.calls[0][0];
+      expect(args.data.amount.toString()).toBe('23.4');
+      expect(args.data.currency).toBe(Currency.USD);
+      expect(args.data.accountAmount.toString()).toBe('21.52');
+      expect(args.data.exchangeRate.toString()).toBe('0.9195');
+    });
+
+    it('no consulta FX si el externalId ya existe (idempotencia)', async () => {
+      prisma.account.findUnique.mockResolvedValue({
+        id: 'acc1',
+        currency: Currency.EUR,
+        isArchived: false,
+      });
+      prisma.category.findUnique.mockResolvedValue({
+        id: 'cat1',
+        type: CategoryType.EXPENSE,
+        isArchived: false,
+      });
+      prisma.transaction.findUnique.mockResolvedValue({ id: 't9' });
+
+      await service.create({
+        ...baseDto,
+        source: TransactionSource.OPENCLAW,
+        externalId: 'ticket-1',
+        currency: Currency.USD,
+      });
+
+      expect(exchangeRate.getRate).not.toHaveBeenCalled();
       expect(prisma.transaction.create).not.toHaveBeenCalled();
     });
 
@@ -343,7 +391,7 @@ describe('TransactionsService', () => {
       expect(prisma.transaction.update).not.toHaveBeenCalled();
     });
 
-    it('rechaza cambiar a una moneda distinta a la de la cuenta', async () => {
+    it('convierte al cambiar moneda o importe (recalcula accountAmount)', async () => {
       prisma.transaction.findUniqueOrThrow.mockResolvedValue(current);
       prisma.account.findUnique.mockResolvedValue({
         id: 'acc1',
@@ -355,11 +403,19 @@ describe('TransactionsService', () => {
         type: CategoryType.EXPENSE,
         isArchived: false,
       });
+      exchangeRate.getRate.mockResolvedValue(new Prisma.Decimal('1.08'));
+      prisma.transaction.update.mockResolvedValue({ id: 't1' });
 
-      await expect(
-        service.update('t1', { currency: Currency.USD }),
-      ).rejects.toThrow(BadRequestException);
-      expect(prisma.transaction.update).not.toHaveBeenCalled();
+      await service.update('t1', { currency: Currency.USD, amount: 100 });
+
+      expect(exchangeRate.getRate).toHaveBeenCalledWith(
+        Currency.USD,
+        Currency.EUR,
+      );
+      const args = prisma.transaction.update.mock.calls[0][0];
+      expect(args.data.amount.toString()).toBe('100');
+      expect(args.data.accountAmount.toString()).toBe('108');
+      expect(args.data.exchangeRate.toString()).toBe('1.08');
     });
 
     it('permite cambiar de cuenta validando la nueva', async () => {

@@ -37,6 +37,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const selectedAccount = accounts.find((a) => a.id === accountId);
+
   useEffect(() => {
     let cancelled = false;
 
@@ -73,11 +75,19 @@ export default function Home() {
       setLoading(true);
       setError(null);
       try {
-        const res = await api.getDashboard({
-          ...monthRange(month),
-          accountId,
-        });
-        if (!cancelled) setData(res);
+        const [res, accountsRes] = await Promise.all([
+          api.getDashboard({
+            ...monthRange(month),
+            accountId,
+          }),
+          api.listAccounts({ page: 1, limit: 100 }),
+        ]);
+        if (!cancelled) {
+          setData(res);
+          setAccounts(
+            accountsRes.data.filter((account) => !account.isArchived),
+          );
+        }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof ApiError ? err.message : "Error inesperado");
@@ -120,9 +130,11 @@ export default function Home() {
 
       {!loading && !error && data && (
         <div className={styles.grid}>
-          <Card className={styles.balance} title="Balance">
+          <Card className={styles.balance} title="Saldo actual">
             <span className={styles.balanceAmount}>
-              {money(data.balance, data.currency)}
+              {selectedAccount
+                ? money(selectedAccount.currentBalance, selectedAccount.currency)
+                : "—"}
             </span>
           </Card>
 

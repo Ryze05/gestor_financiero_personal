@@ -75,7 +75,9 @@ export default function TransactionsPage() {
         ]);
         if (!cancelled) {
           setCategories(categoriesRes.data);
-          setAccounts(accountsRes.data);
+          setAccounts(
+            accountsRes.data.filter((account) => !account.isArchived),
+          );
           const active = accountsRes.data.filter(
             (account) => !account.isArchived,
           );
@@ -355,6 +357,16 @@ export default function TransactionsPage() {
                     {transaction.type === "EXPENSE" ? "-" : "+"}
                     {formatMoney(transaction.amount, transaction.currency)}
                   </span>
+                  {transaction.exchangeRate !== "1" && (
+                    <span className={styles.converted}>
+                      →{" "}
+                      {formatMoney(
+                        transaction.accountAmount,
+                        transaction.account?.currency ?? transaction.currency,
+                      )}{" "}
+                      @ {transaction.exchangeRate}
+                    </span>
+                  )}
                   <ActionsMenu
                     disabled={Boolean(transaction.transferId)}
                     items={
@@ -392,7 +404,7 @@ export default function TransactionsPage() {
         {editing && (
           <TransactionForm
             accounts={accounts}
-            categories={categories}
+            categories={categories.filter((category) => !category.isArchived)}
             submitLabel="Guardar cambios"
             initial={{
               type: editing.type,
@@ -402,6 +414,7 @@ export default function TransactionsPage() {
               accountId: editing.accountId,
               categoryId: editing.categoryId ?? "",
               notes: editing.notes ?? "",
+              currency: editing.currency,
             }}
             onSubmit={async (input) => {
               await api.updateTransaction(editing.id, input);

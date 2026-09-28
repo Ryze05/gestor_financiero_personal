@@ -4,10 +4,14 @@ import { Prisma } from '../generated/prisma/client.js';
 import { CreateTransferDto } from './dto/create-transfer.dto.js';
 import { UpdateTransferDto } from './dto/update-transfer.dto.js';
 import { TransferQueryDto } from './dto/transfer-query.dto.js';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
 
 @Injectable()
 export class TransfersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly exchangeRate: ExchangeRateService,
+  ) {}
 
   async create(dto: CreateTransferDto) {
     const { sourceAccountId, destinationAccountId } = dto;
@@ -21,24 +25,29 @@ export class TransfersService {
       this.assertAccountActive(destinationAccountId),
     ]);
 
-    if (source.currency !== destination.currency) {
-      throw new BadRequestException(
-        'La conversion de divisa aun no esta disponible.',
-      );
-    }
-
     const amount = new Prisma.Decimal(dto.amount);
     const date = new Date(dto.date);
     const concept = dto.concept ?? 'Transferencia';
+
+    let destinationAmount = amount;
+    let exchangeRate = new Prisma.Decimal(1);
+    if (source.currency !== destination.currency) {
+      const rate = await this.exchangeRate.getRate(
+        source.currency,
+        destination.currency,
+      );
+      destinationAmount = this.exchangeRate.convert(amount, rate);
+      exchangeRate = rate;
+    }
 
     return this.prisma.$transaction(async (p) => {
       const transfer = await p.transfer.create({
         data: {
           amount,
           sourceCurrency: source.currency,
-          destinationAmount: amount,
+          destinationAmount,
           destinationCurrency: destination.currency,
-          exchangeRate: new Prisma.Decimal(1),
+          exchangeRate,
           date,
           concept,
           sourceAccountId,
@@ -64,9 +73,9 @@ export class TransfersService {
       await p.transaction.create({
         data: {
           type: 'INCOME',
-          amount,
+          amount: destinationAmount,
           currency: destination.currency,
-          accountAmount: amount,
+          accountAmount: destinationAmount,
           exchangeRate: new Prisma.Decimal(1),
           concept,
           date,
@@ -101,16 +110,32 @@ export class TransfersService {
       this.assertAccountActive(destinationAccountId),
     ]);
 
-    if (source.currency !== destination.currency) {
-      throw new BadRequestException(
-        'La conversion de divisa aun no esta disponible.',
-      );
-    }
-
     const amount =
       dto.amount !== undefined ? new Prisma.Decimal(dto.amount) : existing.amount;
     const date = dto.date !== undefined ? new Date(dto.date) : existing.date;
     const concept = dto.concept ?? existing.concept ?? 'Transferencia';
+
+    let destinationAmount = existing.destinationAmount;
+    let exchangeRate = existing.exchangeRate;
+
+    const recompute =
+      dto.amount !== undefined ||
+      dto.sourceAccountId !== undefined ||
+      dto.destinationAccountId !== undefined;
+
+    if (recompute) {
+      if (source.currency !== destination.currency) {
+        const rate = await this.exchangeRate.getRate(
+          source.currency,
+          destination.currency,
+        );
+        destinationAmount = this.exchangeRate.convert(amount, rate);
+        exchangeRate = rate;
+      } else {
+        destinationAmount = amount;
+        exchangeRate = new Prisma.Decimal(1);
+      }
+    }
 
     return this.prisma.$transaction(async (p) => {
       const transfer = await p.transfer.update({
@@ -118,9 +143,9 @@ export class TransfersService {
         data: {
           amount,
           sourceCurrency: source.currency,
-          destinationAmount: amount,
+          destinationAmount,
           destinationCurrency: destination.currency,
-          exchangeRate: new Prisma.Decimal(1),
+          exchangeRate,
           date,
           concept,
           sourceAccountId,
@@ -146,9 +171,9 @@ export class TransfersService {
         where: { transferId: id, type: 'INCOME' },
         data: {
           type: 'INCOME',
-          amount,
+          amount: destinationAmount,
           currency: destination.currency,
-          accountAmount: amount,
+          accountAmount: destinationAmount,
           exchangeRate: new Prisma.Decimal(1),
           concept,
           date,

@@ -105,10 +105,6 @@ export default function TransfersPage() {
     if (sourceAccountId === destinationAccountId) {
       return setFormError("Las cuentas deben ser distintas.");
     }
-    const destination = accounts.find((a) => a.id === destinationAccountId);
-    if (sourceAccount?.currency !== destination?.currency) {
-      return setFormError("La conversión de divisa aún no está disponible.");
-    }
     const value = Number(amount);
     if (!value || value <= 0) {
       return setFormError("Introduce un importe válido.");
@@ -294,6 +290,11 @@ export default function TransfersPage() {
                 <div className={styles.rowActions}>
                   <span className={styles.amount}>
                     {formatMoney(transfer.amount, transfer.sourceCurrency)}
+                    {transfer.sourceCurrency !== transfer.destinationCurrency &&
+                      ` → ${formatMoney(
+                        transfer.destinationAmount,
+                        transfer.destinationCurrency,
+                      )}`}
                   </span>
                   <ActionsMenu
                     ariaLabel={`Acciones de ${transfer.concept ?? "transferencia"}`}

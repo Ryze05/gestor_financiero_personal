@@ -326,6 +326,13 @@
   color: var(--negative);
 }
 
+.converted {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
 .srOnly {
   position: absolute;
   width: 1px;

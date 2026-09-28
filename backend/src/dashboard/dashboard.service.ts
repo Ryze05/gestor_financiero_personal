@@ -20,7 +20,6 @@ export class DashboardService {
     const where: Prisma.TransactionWhereInput = {
       transferId: null,
       accountId,
-      currency: account.currency,
       ...(from || to
         ? {
             date: {
