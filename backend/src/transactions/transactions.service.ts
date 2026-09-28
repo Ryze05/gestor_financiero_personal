@@ -5,20 +5,18 @@ import { CreateTransactionDto } from './dto/create-transaction.dto.js';
 import { UpdateTransactionDto } from './dto/update-transaction.dto.js';
 import { TransactionQueryDto } from './dto/transaction-query.dto.js';
 import { TransactionType } from '../generated/prisma/enums.js';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
 
 @Injectable()
 export class TransactionsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly exchangeRate: ExchangeRateService,
+  ) {}
 
   async create(dto: CreateTransactionDto) {
     const account = await this.assertAccountActive(dto.accountId);
     await this.assertCategoryCompatible(dto.categoryId, dto.type);
-
-    if (dto.currency !== account.currency) {
-      throw new BadRequestException(
-        'La conversion de divisa aun no esta disponible.',
-      );
-    }
 
     if (dto.externalId) {
       const existing = await this.prisma.transaction.findUnique({
@@ -28,13 +26,25 @@ export class TransactionsService {
     }
 
     const amount = new Prisma.Decimal(dto.amount);
+    let accountAmount = amount;
+    let exchangeRate = new Prisma.Decimal(1);
+
+    if (dto.currency !== account.currency) {
+      const rate = await this.exchangeRate.getRate(
+        dto.currency,
+        account.currency,
+      );
+      accountAmount = this.exchangeRate.convert(amount, rate);
+      exchangeRate = rate;
+    }
+
     return this.prisma.transaction.create({
       data: {
         type: dto.type,
         amount,
         currency: dto.currency,
-        accountAmount: amount,
-        exchangeRate: new Prisma.Decimal(1),
+        accountAmount,
+        exchangeRate,
         concept: dto.concept,
         date: new Date(dto.date),
         notes: dto.notes,
@@ -103,24 +113,34 @@ export class TransactionsService {
 
     const account = await this.assertAccountActive(accountId);
     await this.assertCategoryCompatible(categoryId, type);
-    if (currency !== account.currency) {
-      throw new BadRequestException(
-        'La conversion de divisa aun no esta disponible.',
-      );
-    }
 
     const data: Prisma.TransactionUncheckedUpdateInput = {};
     if (dto.type !== undefined) data.type = dto.type;
     if (dto.concept !== undefined) data.concept = dto.concept;
     if (dto.date !== undefined) data.date = new Date(dto.date);
-    if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.currency !== undefined) data.currency = dto.currency;
     if (dto.accountId !== undefined) data.accountId = dto.accountId;
     if (dto.categoryId !== undefined) data.categoryId = dto.categoryId;
-    if (dto.amount !== undefined) {
-      const amount = new Prisma.Decimal(dto.amount);
-      data.amount = amount;
-      data.accountAmount = amount;
+    if (dto.amount !== undefined) data.amount = new Prisma.Decimal(dto.amount);
+
+    const recompute =
+      dto.amount !== undefined ||
+      dto.currency !== undefined ||
+      dto.accountId !== undefined;
+
+    if (recompute) {
+      const amount =
+        dto.amount !== undefined
+          ? new Prisma.Decimal(dto.amount)
+          : current.amount;
+      if (currency !== account.currency) {
+        const rate = await this.exchangeRate.getRate(currency, account.currency);
+        data.accountAmount = this.exchangeRate.convert(amount, rate);
+        data.exchangeRate = rate;
+      } else {
+        data.accountAmount = amount;
+        data.exchangeRate = new Prisma.Decimal(1);
+      }
     }
 
     return this.prisma.transaction.update({ where: { id }, data });

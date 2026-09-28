@@ -6,9 +6,18 @@ import { App } from 'supertest/types';
 import { AppModule } from '../app.module.js';
 import { setupApp } from '../app.setup.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
+import { Prisma } from '../generated/prisma/client.js';
 
 const MISSING_ID = '00000000-0000-0000-0000-000000000000';
 const TRANSFER_DATE = '2000-01-15';
+
+const fxStub = {
+  getRate: async (from: string, to: string) =>
+    new Prisma.Decimal(from === 'EUR' && to === 'USD' ? '1.08' : '0.9195'),
+  convert: (amount: Prisma.Decimal, rate: Prisma.Decimal) =>
+    amount.times(rate).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+};
 
 describe('Transfers (e2e)', () => {
   let app: INestApplication<App>;
@@ -42,7 +51,10 @@ describe('Transfers (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ExchangeRateService)
+      .useValue(fxStub)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     setupApp(app);
@@ -127,11 +139,25 @@ describe('Transfers (e2e)', () => {
     ).expect(400);
   });
 
-  it('rechaza monedas distintas → 400', async () => {
-    await post(
-      '/api/v1/transfers',
-      validTransfer({ destinationAccountId: usdAccountId }),
-    ).expect(400);
+  it('POST convierte cuando las monedas difieren → 201', async () => {
+    const created = await createTransfer({
+      amount: 100,
+      sourceAccountId: eurAccountId,
+      destinationAccountId: usdAccountId,
+    });
+
+    expect(created.destinationAmount).toBe('108');
+    expect(created.destinationCurrency).toBe('USD');
+    expect(created.exchangeRate).toBe('1.08');
+
+    const detail = await get(`/api/v1/transfers/${created.id}`).expect(200);
+    const income = detail.body.transactions.find(
+      (t: { type: string }) => t.type === 'INCOME',
+    );
+    expect(income.accountId).toBe(usdAccountId);
+    expect(income.amount).toBe('108');
+    expect(income.currency).toBe('USD');
+    expect(income.accountAmount).toBe('108');
   });
 
   it('rechaza cuenta inexistente → 400', async () => {
@@ -252,12 +278,25 @@ describe('Transfers (e2e)', () => {
     expect(Number(destAfter)).toBe(Number(destBefore) + 35);
   });
 
-  it('PATCH rechaza monedas distintas → 400', async () => {
+  it('PATCH convierte al cambiar a una cuenta de otra moneda → 200', async () => {
     const created = await createTransfer();
 
     await patch(`/api/v1/transfers/${created.id}`, {
       destinationAccountId: usdAccountId,
-    }).expect(400);
+      amount: 100,
+    }).expect(200);
+
+    const detail = await get(`/api/v1/transfers/${created.id}`).expect(200);
+    expect(detail.body.destinationAccountId).toBe(usdAccountId);
+    expect(detail.body.destinationAmount).toBe('108');
+    expect(detail.body.exchangeRate).toBe('1.08');
+
+    const income = detail.body.transactions.find(
+      (t: { type: string }) => t.type === 'INCOME',
+    );
+    expect(income.accountId).toBe(usdAccountId);
+    expect(income.amount).toBe('108');
+    expect(income.currency).toBe('USD');
   });
 
   it('PATCH rechaza body invalido → 400', async () => {

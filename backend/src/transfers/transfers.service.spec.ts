@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { TransfersService } from './transfers.service.js';
 
@@ -18,6 +19,11 @@ describe('TransfersService', () => {
     },
     transaction: { updateMany: vi.fn() },
     $transaction: vi.fn(),
+  };
+  const exchangeRate = {
+    getRate: vi.fn(),
+    convert: (amount: Prisma.Decimal, rate: Prisma.Decimal) =>
+      amount.times(rate).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
   };
 
   const dto = {
@@ -40,6 +46,7 @@ describe('TransfersService', () => {
       providers: [
         TransfersService,
         { provide: PrismaService, useValue: prisma },
+        { provide: ExchangeRateService, useValue: exchangeRate },
       ],
     }).compile();
     service = module.get(TransfersService);
@@ -63,14 +70,39 @@ describe('TransfersService', () => {
       );
     });
 
-    it('rejects when currencies differ (no conversion in MVP)', async () => {
+    it('converts the destination amount when currencies differ', async () => {
       prisma.account.findUnique
         .mockResolvedValueOnce(account({ currency: 'EUR' }))
         .mockResolvedValueOnce(account({ currency: 'USD' }));
+      exchangeRate.getRate.mockResolvedValue(new Prisma.Decimal('1.08'));
 
-      await expect(service.create(dto)).rejects.toBeInstanceOf(
-        BadRequestException,
+      const tx = {
+        transfer: {
+          create: vi.fn().mockResolvedValue({ id: 'transfer-id' }),
+          findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'transfer-id' }),
+        },
+        transaction: { create: vi.fn().mockResolvedValue({}) },
+      };
+      prisma.$transaction.mockImplementation(
+        (callback: (client: typeof tx) => unknown) => callback(tx),
       );
+
+      await service.create({ ...dto, amount: 100 });
+
+      expect(exchangeRate.getRate).toHaveBeenCalledWith('EUR', 'USD');
+      const transferData = tx.transfer.create.mock.calls[0][0].data;
+      expect(transferData.destinationAmount.toString()).toBe('108');
+      expect(transferData.exchangeRate.toString()).toBe('1.08');
+
+      const [expense, income] = tx.transaction.create.mock.calls.map(
+        (call) => call[0].data,
+      );
+      expect(expense.amount.toString()).toBe('100');
+      expect(expense.currency).toBe('EUR');
+      expect(expense.accountAmount.toString()).toBe('100');
+      expect(income.amount.toString()).toBe('108');
+      expect(income.currency).toBe('USD');
+      expect(income.accountAmount.toString()).toBe('108');
     });
 
     it('creates the transfer and both transactions with the expected data', async () => {
@@ -168,6 +200,8 @@ describe('TransfersService', () => {
       destinationCurrency: 'EUR',
       sourceAccountId: 'source-id',
       destinationAccountId: 'destination-id',
+      destinationAmount: new Prisma.Decimal('10'),
+      exchangeRate: new Prisma.Decimal('1'),
     };
 
     const client = () => ({
@@ -207,12 +241,25 @@ describe('TransfersService', () => {
       ).rejects.toBeInstanceOf(BadRequestException);
     });
 
-    it('rejects when currencies differ (no conversion in MVP)', async () => {
+    it('converts the destination amount when currencies differ', async () => {
       stubAccounts('EUR', 'USD');
+      exchangeRate.getRate.mockResolvedValue(new Prisma.Decimal('1.08'));
+      const p = client();
+      prisma.$transaction.mockImplementation(
+        (callback: (client: typeof p) => unknown) => callback(p),
+      );
 
-      await expect(
-        service.update('transfer-id', { amount: 25 }),
-      ).rejects.toBeInstanceOf(BadRequestException);
+      await service.update('transfer-id', { amount: 100 });
+
+      const transferData = p.transfer.update.mock.calls[0][0].data;
+      expect(transferData.destinationAmount.toString()).toBe('108');
+      expect(transferData.exchangeRate.toString()).toBe('1.08');
+
+      const [expenseCall, incomeCall] = p.transaction.updateMany.mock.calls;
+      expect(expenseCall[0].data.amount.toString()).toBe('100');
+      expect(expenseCall[0].data.currency).toBe('EUR');
+      expect(incomeCall[0].data.amount.toString()).toBe('108');
+      expect(incomeCall[0].data.currency).toBe('USD');
     });
 
     it('updates the transfer and both movements atomically with the partial dto', async () => {

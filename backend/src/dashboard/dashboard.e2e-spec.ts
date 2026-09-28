@@ -6,8 +6,17 @@ import { App } from 'supertest/types';
 import { AppModule } from '../app.module.js';
 import { setupApp } from '../app.setup.js';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
+import { Prisma } from '../generated/prisma/client.js';
 
 const MISSING_ID = '00000000-0000-0000-0000-000000000000';
+
+const fxStub = {
+  getRate: async (from: string, to: string) =>
+    new Prisma.Decimal(from === 'EUR' && to === 'USD' ? '1.08' : '0.9195'),
+  convert: (amount: Prisma.Decimal, rate: Prisma.Decimal) =>
+    amount.times(rate).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+};
 
 describe('Dashboard (e2e)', () => {
   let app: INestApplication<App>;
@@ -49,7 +58,10 @@ describe('Dashboard (e2e)', () => {
   beforeAll(async () => {
     const moduleFixture = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ExchangeRateService)
+      .useValue(fxStub)
+      .compile();
 
     app = moduleFixture.createNestApplication();
     setupApp(app);
@@ -164,6 +176,28 @@ describe('Dashboard (e2e)', () => {
     expect(
       byCategory.find((c) => c.categoryId === expenseCategory2Id)?.total,
     ).toBe('30');
+  });
+
+  it('incluye movimientos en otra moneda usando accountAmount', async () => {
+    const created = await createTransaction({
+      amount: 23.4,
+      currency: 'USD',
+      date: '2000-09-25',
+    }).expect(201);
+    expect(created.body.accountAmount).toBe('21.52');
+    expect(created.body.exchangeRate).toBe('0.9195');
+
+    const res = await dashboard('from=2000-09-01&to=2000-09-30').expect(200);
+
+    expect(res.body.currency).toBe('EUR');
+    expect(res.body.expense).toBe('21.52');
+    expect(res.body.balance).toBe('-21.52');
+    expect(res.body.count).toBe(1);
+    expect(res.body.byCategory).toContainEqual({
+      categoryId: expenseCategoryId,
+      name: expect.any(String),
+      total: '21.52',
+    });
   });
 
   it('filtra por cuenta (otra cuenta sin datos) → ceros', async () => {
