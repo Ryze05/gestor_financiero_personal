@@ -1,6 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '../prisma/prisma.service.js';
+import { Prisma } from '../generated/prisma/client.js';
 import { TransfersService } from './transfers.service.js';
 
 describe('TransfersService', () => {
@@ -12,8 +13,10 @@ describe('TransfersService', () => {
       findMany: vi.fn(),
       count: vi.fn(),
       findUniqueOrThrow: vi.fn(),
+      update: vi.fn(),
       delete: vi.fn(),
     },
+    transaction: { updateMany: vi.fn() },
     $transaction: vi.fn(),
   };
 
@@ -152,6 +155,143 @@ describe('TransfersService', () => {
       );
 
       await expect(service.create(dto)).rejects.toThrow('db down');
+    });
+  });
+
+  describe('update', () => {
+    const existing = {
+      id: 'transfer-id',
+      amount: new Prisma.Decimal('10'),
+      date: new Date('2026-09-25'),
+      concept: 'Ahorro',
+      sourceCurrency: 'EUR',
+      destinationCurrency: 'EUR',
+      sourceAccountId: 'source-id',
+      destinationAccountId: 'destination-id',
+    };
+
+    const client = () => ({
+      transfer: {
+        update: vi.fn().mockResolvedValue({ id: 'transfer-id' }),
+        findUniqueOrThrow: vi.fn().mockResolvedValue({ id: 'transfer-id' }),
+      },
+      transaction: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    });
+
+    const stubAccounts = (currencyA = 'EUR', currencyB = 'EUR') => {
+      prisma.account.findUnique
+        .mockResolvedValueOnce(account({ currency: currencyA }))
+        .mockResolvedValueOnce(account({ currency: currencyB }));
+    };
+
+    beforeEach(() => {
+      prisma.transfer.findUniqueOrThrow.mockResolvedValue(existing);
+    });
+
+    it('rejects when both accounts are the same', async () => {
+      await expect(
+        service.update('transfer-id', {
+          destinationAccountId: 'source-id',
+        }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects when an account does not exist or is archived', async () => {
+      prisma.account.findUnique
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(account());
+
+      await expect(
+        service.update('transfer-id', { amount: 25 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('rejects when currencies differ (no conversion in MVP)', async () => {
+      stubAccounts('EUR', 'USD');
+
+      await expect(
+        service.update('transfer-id', { amount: 25 }),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('updates the transfer and both movements atomically with the partial dto', async () => {
+      stubAccounts();
+      const p = client();
+      prisma.$transaction.mockImplementation(
+        (callback: (client: typeof p) => unknown) => callback(p),
+      );
+
+      await service.update('transfer-id', { amount: 25, concept: 'Nuevo' });
+
+      const transferData = p.transfer.update.mock.calls[0][0].data;
+      expect(transferData.amount.toString()).toBe('25');
+      expect(transferData.concept).toBe('Nuevo');
+      expect(transferData.sourceAccountId).toBe('source-id');
+      expect(transferData.destinationAccountId).toBe('destination-id');
+
+      expect(p.transaction.updateMany).toHaveBeenCalledTimes(2);
+      const [expenseCall, incomeCall] = p.transaction.updateMany.mock.calls;
+      expect(expenseCall[0].where).toEqual({
+        transferId: 'transfer-id',
+        type: 'EXPENSE',
+      });
+      expect(expenseCall[0].data.accountId).toBe('source-id');
+      expect(expenseCall[0].data.amount.toString()).toBe('25');
+      expect(incomeCall[0].where).toEqual({
+        transferId: 'transfer-id',
+        type: 'INCOME',
+      });
+      expect(incomeCall[0].data.accountId).toBe('destination-id');
+    });
+
+    it('keeps existing values when fields are omitted', async () => {
+      stubAccounts();
+      const p = client();
+      prisma.$transaction.mockImplementation(
+        (callback: (client: typeof p) => unknown) => callback(p),
+      );
+
+      await service.update('transfer-id', {});
+
+      const transferData = p.transfer.update.mock.calls[0][0].data;
+      expect(transferData.amount.toString()).toBe('10');
+      expect(transferData.date).toEqual(new Date('2026-09-25'));
+      expect(transferData.concept).toBe('Ahorro');
+    });
+
+    it('falls back to "Transferencia" when the existing concept is null', async () => {
+      prisma.transfer.findUniqueOrThrow.mockResolvedValue({
+        ...existing,
+        concept: null,
+      });
+      stubAccounts();
+      const p = client();
+      prisma.$transaction.mockImplementation(
+        (callback: (client: typeof p) => unknown) => callback(p),
+      );
+
+      await service.update('transfer-id', {});
+
+      expect(p.transfer.update.mock.calls[0][0].data.concept).toBe(
+        'Transferencia',
+      );
+      expect(p.transaction.updateMany.mock.calls[0][0].data.concept).toBe(
+        'Transferencia',
+      );
+    });
+
+    it('propagates errors from the atomic operation (no partial save)', async () => {
+      stubAccounts();
+      const p = client();
+      p.transaction.updateMany.mockRejectedValue(new Error('db down'));
+      prisma.$transaction.mockImplementation(
+        (callback: (client: typeof p) => unknown) => callback(p),
+      );
+
+      await expect(
+        service.update('transfer-id', { amount: 25 }),
+      ).rejects.toThrow('db down');
     });
   });
 

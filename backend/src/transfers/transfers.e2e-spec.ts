@@ -20,6 +20,8 @@ describe('Transfers (e2e)', () => {
   const post = (path: string, body: object) =>
     request(app.getHttpServer()).post(path).send(body);
   const get = (path: string) => request(app.getHttpServer()).get(path);
+  const patch = (path: string, body: object) =>
+    request(app.getHttpServer()).patch(path).send(body);
   const del = (path: string) => request(app.getHttpServer()).delete(path);
 
   const uniqueName = () => `e2e-${randomUUID()}`;
@@ -184,6 +186,97 @@ describe('Transfers (e2e)', () => {
     const transactionId = detail.body.transactions[0].id;
 
     await del(`/api/v1/transactions/${transactionId}`).expect(409);
+  });
+
+  it('PATCH actualiza la transferencia y sus dos movimientos → 200', async () => {
+    const created = await createTransfer();
+    const concept = uniqueName();
+
+    const patched = await patch(`/api/v1/transfers/${created.id}`, {
+      amount: 75,
+      concept,
+    }).expect(200);
+
+    expect(patched.body.amount).toBe('75');
+    expect(patched.body.concept).toBe(concept);
+
+    const detail = await get(`/api/v1/transfers/${created.id}`).expect(200);
+    expect(detail.body.amount).toBe('75');
+    for (const transaction of detail.body.transactions) {
+      expect(transaction.amount).toBe('75');
+      expect(transaction.concept).toBe(concept);
+    }
+  });
+
+  it('PATCH cambia las cuentas y mueve los movimientos → 200', async () => {
+    const created = await createTransfer();
+    const third = await post('/api/v1/accounts', {
+      name: uniqueName(),
+      currency: 'EUR',
+    }).expect(201);
+
+    await patch(`/api/v1/transfers/${created.id}`, {
+      destinationAccountId: third.body.id,
+    }).expect(200);
+
+    const detail = await get(`/api/v1/transfers/${created.id}`).expect(200);
+    expect(detail.body.destinationAccountId).toBe(third.body.id);
+    const income = detail.body.transactions.find(
+      (t: { type: string }) => t.type === 'INCOME',
+    );
+    expect(income.accountId).toBe(third.body.id);
+  });
+
+  it('PATCH ajusta los saldos de las cuentas de origen y destino', async () => {
+    const created = await createTransfer({ amount: 25 });
+
+    const before = await get('/api/v1/accounts').expect(200);
+    const sourceBefore = before.body.data.find(
+      (a: { id: string }) => a.id === eurAccountId,
+    ).currentBalance;
+    const destBefore = before.body.data.find(
+      (a: { id: string }) => a.id === otherEurAccountId,
+    ).currentBalance;
+
+    await patch(`/api/v1/transfers/${created.id}`, { amount: 60 }).expect(200);
+
+    const after = await get('/api/v1/accounts').expect(200);
+    const sourceAfter = after.body.data.find(
+      (a: { id: string }) => a.id === eurAccountId,
+    ).currentBalance;
+    const destAfter = after.body.data.find(
+      (a: { id: string }) => a.id === otherEurAccountId,
+    ).currentBalance;
+
+    expect(Number(sourceAfter)).toBe(Number(sourceBefore) - 35);
+    expect(Number(destAfter)).toBe(Number(destBefore) + 35);
+  });
+
+  it('PATCH rechaza monedas distintas → 400', async () => {
+    const created = await createTransfer();
+
+    await patch(`/api/v1/transfers/${created.id}`, {
+      destinationAccountId: usdAccountId,
+    }).expect(400);
+  });
+
+  it('PATCH rechaza body invalido → 400', async () => {
+    const created = await createTransfer();
+
+    await patch(`/api/v1/transfers/${created.id}`, { amount: 'mucho' }).expect(
+      400,
+    );
+    await patch(`/api/v1/transfers/${created.id}`, { unknownField: true }).expect(
+      400,
+    );
+  });
+
+  it('PATCH :id inexistente → 404', async () => {
+    await patch(`/api/v1/transfers/${MISSING_ID}`, { amount: 5 }).expect(404);
+  });
+
+  it('PATCH :id no uuid → 400', async () => {
+    await patch('/api/v1/transfers/not-a-uuid', { amount: 5 }).expect(400);
   });
 
   it('DELETE borra la transferencia y sus movimientos (cascada)', async () => {

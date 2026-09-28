@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { CreateTransferDto } from './dto/create-transfer.dto.js';
+import { UpdateTransferDto } from './dto/update-transfer.dto.js';
 import { TransferQueryDto } from './dto/transfer-query.dto.js';
 
 @Injectable()
@@ -72,6 +73,86 @@ export class TransfersService {
           source: 'WEB',
           accountId: destinationAccountId,
           transferId: transfer.id,
+        },
+      });
+
+      return p.transfer.findUniqueOrThrow({
+        where: { id: transfer.id },
+        include: { sourceAccount: true, destinationAccount: true },
+      });
+    });
+  }
+
+  async update(id: string, dto: UpdateTransferDto) {
+    const existing = await this.prisma.transfer.findUniqueOrThrow({
+      where: { id },
+    });
+
+    const sourceAccountId = dto.sourceAccountId ?? existing.sourceAccountId;
+    const destinationAccountId =
+      dto.destinationAccountId ?? existing.destinationAccountId;
+
+    if (sourceAccountId === destinationAccountId) {
+      throw new BadRequestException('Las cuentas deben ser distintas.');
+    }
+
+    const [source, destination] = await Promise.all([
+      this.assertAccountActive(sourceAccountId),
+      this.assertAccountActive(destinationAccountId),
+    ]);
+
+    if (source.currency !== destination.currency) {
+      throw new BadRequestException(
+        'La conversion de divisa aun no esta disponible.',
+      );
+    }
+
+    const amount =
+      dto.amount !== undefined ? new Prisma.Decimal(dto.amount) : existing.amount;
+    const date = dto.date !== undefined ? new Date(dto.date) : existing.date;
+    const concept = dto.concept ?? existing.concept ?? 'Transferencia';
+
+    return this.prisma.$transaction(async (p) => {
+      const transfer = await p.transfer.update({
+        where: { id },
+        data: {
+          amount,
+          sourceCurrency: source.currency,
+          destinationAmount: amount,
+          destinationCurrency: destination.currency,
+          exchangeRate: new Prisma.Decimal(1),
+          date,
+          concept,
+          sourceAccountId,
+          destinationAccountId,
+        },
+      });
+
+      await p.transaction.updateMany({
+        where: { transferId: id, type: 'EXPENSE' },
+        data: {
+          type: 'EXPENSE',
+          amount,
+          currency: source.currency,
+          accountAmount: amount,
+          exchangeRate: new Prisma.Decimal(1),
+          concept,
+          date,
+          accountId: sourceAccountId,
+        },
+      });
+
+      await p.transaction.updateMany({
+        where: { transferId: id, type: 'INCOME' },
+        data: {
+          type: 'INCOME',
+          amount,
+          currency: destination.currency,
+          accountAmount: amount,
+          exchangeRate: new Prisma.Decimal(1),
+          concept,
+          date,
+          accountId: destinationAccountId,
         },
       });
 

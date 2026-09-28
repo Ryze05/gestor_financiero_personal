@@ -5,12 +5,14 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { TransfersService } from './transfers.service.js';
 import { CreateTransferDto } from './dto/create-transfer.dto.js';
+import { UpdateTransferDto } from './dto/update-transfer.dto.js';
 import { TransferQueryDto } from './dto/transfer-query.dto.js';
 
 @ApiTags('transfers')
@@ -31,6 +33,14 @@ export class TransfersController {
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.transfersService.findOne(id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateTransferDto: UpdateTransferDto,
+  ) {
+    return this.transfersService.update(id, updateTransferDto);
   }
 
   @Delete(':id')

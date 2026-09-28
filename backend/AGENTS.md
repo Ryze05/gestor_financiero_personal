@@ -80,7 +80,7 @@ pnpm prisma generate
 - `source` is `WEB` or `OPENCLAW`.
 - `externalId` provides idempotency for OpenClaw-created operations.
 - `transfers` creates an atomic `Transfer` plus its EXPENSE/INCOME movement pair. MVP transfers require same-currency active accounts; different currencies wait for Rebanada 4 conversion.
-- Deleting a transfer cascades to its two linked transactions. `PATCH` transfer editing is not implemented yet.
+- Deleting a transfer cascades to its two linked transactions. Editing a transfer (`PATCH`) updates the transfer and its two linked transactions atomically.
 
 ## Testing
 
