@@ -51,7 +51,7 @@ El trabajo se organiza en rebanadas verticales: cada una entrega algo que funcio
 
 1. **Rebanada 1. Nucleo backend.** Modulos `accounts`, `categories` y `transactions`, DTOs con `class-validator`, TDD y endpoints bajo `/api/v1`.
 2. **Rebanada 2. Frontend funcional (Nivel 1).** Dashboard, listado, alta manual, edicion y filtros.
-3. **Rebanada 3. OpenClaw (Nivel 1).** Skill que lee un ticket, propone datos, pide confirmacion y crea el movimiento.
+3. **Rebanada 3. OpenClaw (Nivel 1).** Servidor MCP en `mcp/` que expone la REST API como tools: consultar gastos, registrar movimientos y transferencias con confirmacion humana.
 4. **Rebanada 4. Extras financieros (fase final).** Conversion EUR/USD, edicion de transferencias, filtros avanzados por `source` y `accountAmount`, nombres de cuenta y categoria en la respuesta de movimientos, y estados de carga (skeletons) en los listados para evitar parpadeos al restaurar la preferencia de cuenta. Esta rebanada esta implementada en backend y frontend.
 5. **Rebanada 5. Nivel 2 (si el tiempo lo permite).** Entidad `Receipt` para agrupar por categoria.
 6. **Post-MVP. Nivel 3.** Lineas de producto.
@@ -209,30 +209,30 @@ La persona puede crear, editar y eliminar el presupuesto de una categoria para u
 
 ## 5.1. Flujo principal con OpenClaw
 
-OpenClaw sera un cliente de la API, no una capa de persistencia adicional.
+OpenClaw se integra mediante un servidor MCP (`mcp/`) que expone la REST API como tools. OpenClaw es un cliente de la API, no una capa de persistencia adicional.
 
 ### Registrar un gasto desde un ticket
 
 1. La persona entrega a OpenClaw una imagen del ticket o el texto de la compra.
 2. OpenClaw extrae tienda, fecha, importe total, moneda y una categoria propuesta.
-3. OpenClaw consulta las categorias disponibles mediante la API si necesita clasificar el gasto.
+3. OpenClaw consulta las categorias disponibles (`list_categories`) si necesita clasificar el gasto.
 4. OpenClaw muestra un resumen normalizado y solicita confirmacion explicita.
-5. Tras la confirmacion, OpenClaw envia `POST /api/v1/transactions`.
-6. OpenClaw comprueba la respuesta de la API y comunica el identificador del movimiento.
-7. Si la respuesta se pierde, OpenClaw consulta los movimientos antes de volver a crear el gasto.
+5. Tras la confirmacion, OpenClaw invoca `create_transaction` (equivalente a `POST /api/v1/transactions` con `source=OPENCLAW`).
+6. OpenClaw comprueba la respuesta y comunica el identificador del movimiento.
+7. Si la respuesta se pierde, OpenClaw consulta los movimientos (`list_transactions`) antes de volver a crear el gasto; `externalId` determinista evita duplicados.
 
 El MVP no guardara necesariamente la imagen del ticket. Podra guardar el texto extraido y una referencia opcional, pero no se subiran imagenes al backend hasta definir un sistema de almacenamiento.
 
 ### Consultar gastos desde OpenClaw
 
-OpenClaw podra responder preguntas utilizando consultas a la API, por ejemplo:
+OpenClaw podra responder preguntas utilizando los tools de lectura, por ejemplo:
 
-- "Lista mis gastos de esta semana."
-- "Cuanto he gastado este mes?"
-- "Cuanto he gastado en alimentacion?"
-- "Cuales son mis ultimos cinco gastos?"
+- "Lista mis gastos de esta semana." → `list_transactions(from, to)`
+- "Cuanto he gastado este mes?" → `get_dashboard(accountId, from, to)`
+- "Cuanto he gastado en alimentacion?" → `list_transactions(type=EXPENSE, search)`
+- "Cuales son mis ultimos cinco gastos?" → `list_transactions(limit=5)`
 
-Para estas respuestas, OpenClaw debera consultar los endpoints y no inventar datos ni calcular sobre informacion que no haya recibido de la API.
+Para estas respuestas, OpenClaw debera consultar los tools y no inventar datos ni calcular sobre informacion que no haya recibido de la API.
 
 ### Seguridad del flujo
 

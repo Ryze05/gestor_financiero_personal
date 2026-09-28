@@ -4,11 +4,11 @@
 
 - `backend/`: NestJS API and Prisma persistence.
 - `frontend/`: Next.js web application.
-- `openclaw/`: placeholder for OpenClaw integration (empty; only `.gitkeep`).
+- `mcp/`: MCP server (`@modelcontextprotocol/server`) exposing the `backend/` REST API as tools for OpenClaw. It is a plain HTTP client of the API — it does not touch PostgreSQL.
 - `docs/`: product spec and architecture decisions (written in Spanish).
 - `docker-compose.yml`: local PostgreSQL and pgAdmin services.
 
-`backend/` and `frontend/` are independent pnpm projects, not a pnpm workspace: each has its own `package.json`, `pnpm-lock.yaml`, and `pnpm-workspace.yaml`, and there is no root `package.json`. Run package commands from inside `backend/` or `frontend/`.
+`backend/`, `frontend/` and `mcp/` are independent pnpm projects, not a pnpm workspace: each has its own `package.json` and `pnpm-lock.yaml`, there is no root `package.json`, and there is no shared workspace. Run package commands from inside the corresponding directory.
 
 This is a single git repository (default branch `main`, no remote CI). Work happens on `feat/*` branches merged to `main` via PRs. `.gitignore` rules are split across the root, `backend/`, and `frontend/`; generated artifacts (`dist/`, `backend/src/generated/prisma`, `*.tsbuildinfo`) and `.env` files must stay untracked.
 
@@ -17,11 +17,12 @@ This is a single git repository (default branch `main`, no remote CI). Work happ
 1. Start the database: `docker compose up -d` (PostgreSQL on `5432`, pgAdmin on `5050`).
 2. Backend: `pnpm start:dev` from `backend/` (API on `3001`, Swagger at `/docs`).
 3. Frontend: `pnpm dev` from `frontend/` (`http://localhost:3000`, consumes `http://localhost:3001/api/v1`).
+4. MCP server (optional, for OpenClaw): `pnpm start` from `mcp/`. It calls the REST API over HTTP, so CORS does not apply (CORS only affects browsers).
 
 ## Workflow
 
 - Use `pnpm`, not `npm`.
-- `frontend/` has no test script (`pnpm test` does not exist there); verify with `pnpm lint` and `pnpm build`. `backend/` uses Vitest.
+- `frontend/` has no test script (`pnpm test` does not exist there); verify with `pnpm lint` and `pnpm build`. `backend/` uses Vitest and `oxlint` (not ESLint).
 - Ask for approval before installing dependencies, running mutating commands, or creating, editing, or deleting files.
 - Keep changes small and verify the affected package.
 - Do not overwrite user changes.

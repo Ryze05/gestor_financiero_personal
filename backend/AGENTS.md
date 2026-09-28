@@ -17,6 +17,8 @@ pnpm prisma db seed
 
 The project uses Vitest, not Jest. `pnpm test` runs `vitest run`; `pnpm test:e2e` uses `vitest.config.e2e.ts`.
 
+Lint runs `oxlint` (not ESLint) with `.oxlintrc.json`; the `no-floating-promises` rule is enabled as an error.
+
 ## Environment
 
 `backend/.env` is required by Prisma and NestJS. `prisma7.config.ts` loads it with `dotenv` and `dotenv-expand`; NestJS validates it through `src/config/env.validation.ts`.
