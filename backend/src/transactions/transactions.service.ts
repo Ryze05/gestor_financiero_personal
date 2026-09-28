@@ -70,6 +70,7 @@ export class TransactionsService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { date: 'desc' },
+        include: { account: true, category: true },
       }),
       this.prisma.transaction.count({ where }),
     ]);
@@ -78,7 +79,10 @@ export class TransactionsService {
   }
 
   findOne(id: string) {
-    return this.prisma.transaction.findUniqueOrThrow({ where: { id } });
+    return this.prisma.transaction.findUniqueOrThrow({
+      where: { id },
+      include: { account: true, category: true },
+    });
   }
 
   async update(id: string, dto: UpdateTransactionDto) {

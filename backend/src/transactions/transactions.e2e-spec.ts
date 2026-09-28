@@ -325,6 +325,24 @@ describe('Transactions (e2e)', () => {
     expect(res.body.id).toBe(created.id);
   });
 
+  it('GET incluye nombres de cuenta y categoria → 200', async () => {
+    const created = await createTransaction();
+    const detail = await request(app.getHttpServer())
+      .get(`/api/v1/transactions/${created.id}`)
+      .expect(200);
+    expect(detail.body.account?.id).toBe(accountId);
+    expect(detail.body.category?.id).toBe(expenseCategoryId);
+
+    const list = await request(app.getHttpServer())
+      .get(`/api/v1/transactions?search=${created.concept}`)
+      .expect(200);
+    const found = list.body.data.find(
+      (t: { id: string }) => t.id === created.id,
+    );
+    expect(found.account?.name).toBeDefined();
+    expect(found.category?.name).toBeDefined();
+  });
+
   it('GET id inexistente → 404', async () => {
     await request(app.getHttpServer())
       .get(`/api/v1/transactions/${MISSING_ID}`)
