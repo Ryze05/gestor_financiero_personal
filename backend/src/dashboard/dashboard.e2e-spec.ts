@@ -102,15 +102,32 @@ describe('Dashboard (e2e)', () => {
   it('sin movimientos en el periodo → ceros', async () => {
     const res = await dashboard('from=2000-01-01&to=2000-01-31').expect(200);
 
-    expect(res.body).toEqual({
-      from: '2000-01-01',
-      to: '2000-01-31',
-      currency: 'EUR',
+    expect(res.body).toEqual(
+      expect.objectContaining({
+        from: '2000-01-01',
+        to: '2000-01-31',
+        currency: 'EUR',
+        income: '0',
+        expense: '0',
+        balance: '0',
+        count: 0,
+        byCategory: [],
+      }),
+    );
+    expect(res.body.timeline).toHaveLength(31);
+    expect(res.body.timeline[0]).toEqual({
+      date: '2000-01-01',
       income: '0',
       expense: '0',
-      balance: '0',
-      count: 0,
-      byCategory: [],
+      transferIn: '0',
+      transferOut: '0',
+    });
+    expect(res.body.timeline[30]).toEqual({
+      date: '2000-01-31',
+      income: '0',
+      expense: '0',
+      transferIn: '0',
+      transferOut: '0',
     });
   });
 
@@ -193,6 +210,18 @@ describe('Dashboard (e2e)', () => {
     expect(res.body.expense).toBe('21.52');
     expect(res.body.balance).toBe('-21.52');
     expect(res.body.count).toBe(1);
+    expect(res.body.timeline).toHaveLength(30);
+    expect(
+      res.body.timeline.find(
+        (point: { date: string }) => point.date === '2000-09-25',
+      ),
+    ).toEqual({
+      date: '2000-09-25',
+      income: '0',
+      expense: '21.52',
+      transferIn: '0',
+      transferOut: '0',
+    });
     expect(res.body.byCategory).toContainEqual({
       categoryId: expenseCategoryId,
       name: expect.any(String),
