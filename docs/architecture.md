@@ -443,10 +443,14 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 
 ### Rebanada 2: frontend usable (Nivel 1)
 
-- Crear proyecto Next.js con CSS Modules.
-- Implementar layout, dashboard, listado y filtros.
-- Implementar formulario de alta, edicion y borrado.
-- Mostrar estados de carga y errores.
+- Proyecto Next.js con CSS Modules (hecho).
+- Layout con sidebar responsive, temas claro/oscuro y tipografias (hecho).
+- Dashboard con selector de mes y divisa (hecho).
+- Listado de movimientos con filtros (texto, tipo, categoria y rango de fechas) y acciones de editar/borrar (hecho).
+- Alta de movimiento reutilizando `TransactionForm` (hecho).
+- Pantallas de cuentas y categorias con alta, archivar/restaurar y filtro por estado (hecho).
+- Estados de carga y errores mostrados en todos los listados (hecho).
+- Cliente API tipado (`src/lib/api`) con `ApiError`, sin axios (hecho).
 
 ### Rebanada 3: OpenClaw (Nivel 1)
 
