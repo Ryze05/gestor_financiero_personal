@@ -56,6 +56,7 @@ describe('DashboardService', () => {
       balance: '0',
       count: 0,
       byCategory: [],
+      timeline: [],
     });
     expect(prisma.category.findMany).not.toHaveBeenCalled();
   });
@@ -67,6 +68,7 @@ describe('DashboardService', () => {
         { type: 'INCOME', _sum: { accountAmount: new Prisma.Decimal('1500') }, _count: { _all: 2 } },
         { type: 'EXPENSE', _sum: { accountAmount: new Prisma.Decimal('500') }, _count: { _all: 5 } },
       ])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     prisma.category.findMany.mockResolvedValue([]);
 
@@ -85,6 +87,7 @@ describe('DashboardService', () => {
         { type: 'INCOME', _sum: { accountAmount: new Prisma.Decimal('100') }, _count: { _all: 1 } },
         { type: 'EXPENSE', _sum: { accountAmount: new Prisma.Decimal('250') }, _count: { _all: 3 } },
       ])
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([]);
     prisma.category.findMany.mockResolvedValue([]);
 
@@ -102,7 +105,8 @@ describe('DashboardService', () => {
       ])
       .mockResolvedValueOnce([
         { categoryId: 'cat1', _sum: { accountAmount: new Prisma.Decimal('120') } },
-      ]);
+      ])
+      .mockResolvedValueOnce([]);
     prisma.category.findMany.mockResolvedValue([{ id: 'cat1', name: 'Alimentación' }]);
 
     const result = await service.get({ accountId: ACC });
@@ -119,7 +123,92 @@ describe('DashboardService', () => {
     expect(categoryCall.where).toEqual(expect.objectContaining({ type: 'EXPENSE' }));
   });
 
-  it('filtra por cuenta, moneda de la cuenta y fecha', async () => {
+  it('agrupa ingresos, gastos y transferencias por fecha (rellenando días vacíos)', async () => {
+    stubAccount(Currency.EUR);
+    prisma.transaction.groupBy
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          date: new Date('2026-09-15'),
+          type: 'INCOME',
+          transferId: null,
+          _sum: { accountAmount: new Prisma.Decimal('1000') },
+        },
+        {
+          date: new Date('2026-09-15'),
+          type: 'EXPENSE',
+          transferId: null,
+          _sum: { accountAmount: new Prisma.Decimal('250') },
+        },
+        {
+          date: new Date('2026-09-15'),
+          type: 'EXPENSE',
+          transferId: 'transfer-1',
+          _sum: { accountAmount: new Prisma.Decimal('50') },
+        },
+      ]);
+    prisma.category.findMany.mockResolvedValue([]);
+
+    const result = await service.get({
+      accountId: ACC,
+      from: '2026-09-01',
+      to: '2026-09-30',
+    });
+
+    expect(result.timeline).toHaveLength(30);
+    expect(result.timeline[0]).toEqual({
+      date: '2026-09-01',
+      income: '0',
+      expense: '0',
+      transferIn: '0',
+      transferOut: '0',
+    });
+    expect(result.timeline[14]).toEqual({
+      date: '2026-09-15',
+      income: '1000',
+      expense: '250',
+      transferIn: '0',
+      transferOut: '50',
+    });
+    expect(result.timeline[29]).toEqual({
+      date: '2026-09-30',
+      income: '0',
+      expense: '0',
+      transferIn: '0',
+      transferOut: '0',
+    });
+  });
+
+  it('no rellena días cuando no hay rango de fechas', async () => {
+    stubAccount(Currency.EUR);
+    prisma.transaction.groupBy
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        {
+          date: new Date('2026-09-15'),
+          type: 'EXPENSE',
+          transferId: null,
+          _sum: { accountAmount: new Prisma.Decimal('120') },
+        },
+      ]);
+    prisma.category.findMany.mockResolvedValue([]);
+
+    const result = await service.get({ accountId: ACC });
+
+    expect(result.timeline).toEqual([
+      {
+        date: '2026-09-15',
+        income: '0',
+        expense: '120',
+        transferIn: '0',
+        transferOut: '0',
+      },
+    ]);
+  });
+
+  it('filtra por cuenta y fecha', async () => {
     stubAccount(Currency.USD);
     prisma.transaction.groupBy.mockResolvedValue([]);
     prisma.category.findMany.mockResolvedValue([]);
@@ -133,9 +222,7 @@ describe('DashboardService', () => {
     expect(prisma.transaction.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          transferId: null,
           accountId: ACC,
-          currency: Currency.USD,
           date: { gte: new Date('2026-09-01'), lte: new Date('2026-09-30') },
         },
       }),
@@ -152,9 +239,7 @@ describe('DashboardService', () => {
     expect(prisma.transaction.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          transferId: null,
           accountId: ACC,
-          currency: Currency.EUR,
           date: { gte: new Date('2026-09-01') },
         },
       }),
@@ -171,9 +256,7 @@ describe('DashboardService', () => {
     expect(prisma.transaction.groupBy).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {
-          transferId: null,
           accountId: ACC,
-          currency: Currency.EUR,
           date: { lte: new Date('2026-09-30') },
         },
       }),

@@ -194,16 +194,25 @@ describe('Transfers (e2e)', () => {
     ).expect(400);
   });
 
-  it('los movimientos de la transferencia NO cuentan en el dashboard', async () => {
-    await createTransfer({ date: TRANSFER_DATE });
+  it('incluye las transferencias en los totales de cada cuenta', async () => {
+    const date = '2000-07-15';
+    await createTransfer({ date, amount: 25 });
 
-    const dashboard = await get(
-      `/api/v1/dashboard?accountId=${eurAccountId}&from=${TRANSFER_DATE}&to=${TRANSFER_DATE}`,
+    const source = await get(
+      `/api/v1/dashboard?accountId=${eurAccountId}&from=${date}&to=${date}`,
     ).expect(200);
+    expect(source.body.count).toBe(1);
+    expect(source.body.income).toBe('0');
+    expect(source.body.expense).toBe('25');
+    expect(source.body.balance).toBe('-25');
 
-    expect(dashboard.body.count).toBe(0);
-    expect(dashboard.body.income).toBe('0');
-    expect(dashboard.body.expense).toBe('0');
+    const dest = await get(
+      `/api/v1/dashboard?accountId=${otherEurAccountId}&from=${date}&to=${date}`,
+    ).expect(200);
+    expect(dest.body.count).toBe(1);
+    expect(dest.body.income).toBe('25');
+    expect(dest.body.expense).toBe('0');
+    expect(dest.body.balance).toBe('25');
   });
 
   it('no permite borrar un movimiento de una transferencia → 409', async () => {

@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api/client";
 import type { Account, DashboardSummary } from "@/lib/api/types";
 import Card from "@/components/Card";
+import CategoryDonut from "@/components/CategoryDonut";
+import BalanceChart from "@/components/BalanceChart";
+import TimelineChart from "@/components/TimelineChart";
 import MonthPicker from "@/components/MonthPicker";
 import SelectField from "@/components/Select";
 import styles from "./dashboard.module.css";
@@ -131,7 +134,7 @@ export default function Home() {
       {!loading && !error && data && (
         <div className={styles.grid}>
           <Card className={styles.balance} title="Saldo actual">
-            <span className={styles.balanceAmount}>
+            <span className={styles.value}>
               {selectedAccount
                 ? money(selectedAccount.currentBalance, selectedAccount.currency)
                 : "—"}
@@ -139,40 +142,60 @@ export default function Home() {
           </Card>
 
           <Card className={styles.income} title="Ingresos">
-            <span className={styles.amount}>
+            <span className={`${styles.value} ${styles.valuePositive}`}>
               {money(data.income, data.currency)}
             </span>
           </Card>
 
           <Card className={styles.expense} title="Gastos">
-            <span className={styles.amount}>
+            <span className={`${styles.value} ${styles.valueNegative}`}>
               {money(data.expense, data.currency)}
             </span>
           </Card>
 
           <Card className={styles.count} title="Movimientos">
-            <span className={styles.countNumber}>{data.count}</span>
+            <span className={styles.value}>{data.count}</span>
+          </Card>
+
+          <Card className={styles.accumulated} title="Balance acumulado">
+            {data.timeline.length === 0 ? (
+              <p className={styles.hint}>Sin movimientos en este periodo.</p>
+            ) : (
+              <BalanceChart
+                currency={data.currency}
+                formatMoney={money}
+                data={data.timeline}
+              />
+            )}
           </Card>
 
           <Card className={styles.category} title="Gastos por categoría">
             {data.byCategory.length === 0 ? (
               <p className={styles.hint}>Sin gastos en este periodo.</p>
             ) : (
-              <ul className={styles.categoryList}>
-                {data.byCategory.map((row) => (
-                  <li
-                    key={row.categoryId ?? "sin-categoria"}
-                    className={styles.categoryRow}
-                  >
-                    <span className={styles.categoryName}>
-                      {row.name ?? "Sin categoría"}
-                    </span>
-                    <span className={styles.categoryTotal}>
-                      {money(row.total, data.currency)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <CategoryDonut
+                currency={data.currency}
+                formatMoney={money}
+                data={data.byCategory.map((row) => ({
+                  name:
+                    row.categoryId === null
+                      ? "Transferencias"
+                      : row.name ?? "Sin categoría",
+                  total: row.total,
+                }))}
+              />
+            )}
+          </Card>
+
+          <Card className={styles.timeline} title="Evolución">
+            {data.timeline.length === 0 ? (
+              <p className={styles.hint}>Sin movimientos en este periodo.</p>
+            ) : (
+              <TimelineChart
+                currency={data.currency}
+                formatMoney={money}
+                data={data.timeline}
+              />
             )}
           </Card>
         </div>
