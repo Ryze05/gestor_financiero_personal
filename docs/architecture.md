@@ -464,11 +464,12 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 
 ### Rebanada 4: extras financieros
 
-- Conversion EUR/USD.
-- Transferencias entre cuentas.
-- Filtros avanzados de movimientos por cuenta, `source` y `accountAmount`.
-- Incluir los nombres de cuenta y categoria en la respuesta de movimientos (`include` de relaciones) para que el frontend no cruce listas ni dependa del tope de paginacion.
-- Editar (`PATCH`) transferencias: actualizar la transferencia y sus dos movimientos enlazados de forma atomica (importe, fecha, cuentas y monedas).
+- Conversion EUR/USD (pendiente).
+- Transferencias entre cuentas (backend hecho; frontend: listado, alta, borrado con confirmacion, movimientos marcados como `Transferencia` en Movimientos y selector de cuentas solo activas; pendiente editar `PATCH`).
+- Filtros avanzados de movimientos por cuenta (hecho), `source` y `accountAmount` (pendiente).
+- Incluir los nombres de cuenta y categoria en la respuesta de movimientos (`include` de relaciones) para que el frontend no cruce listas ni dependa del tope de paginacion (pendiente).
+- Estados de carga con skeleton en el primer pintado de listados y filtros (evitar parpadeos al restaurar la preferencia de cuenta) (pendiente).
+- Editar (`PATCH`) transferencias: actualizar la transferencia y sus dos movimientos enlazados de forma atomica (importe, fecha, cuentas y monedas) (pendiente).
 - Estos filtros requieren cambios coordinados en DTOs, queries, contrato API y frontend.
 
 ### Rebanada 5: Nivel 2 (si el tiempo lo permite)

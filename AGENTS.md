@@ -24,6 +24,7 @@ This is a single git repository (branch `main`). Generated artifacts (`dist/`, `
 - Ask for approval before installing dependencies, running mutating commands, or creating, editing, or deleting files.
 - Keep changes small and verify the affected package.
 - Do not overwrite user changes.
+- Commit messages use Conventional Commits with a scope (`feat(backend):`, `feat(frontend):`, `docs:`, etc.).
 
 ## Shared Domain Rules
 

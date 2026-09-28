@@ -4,7 +4,7 @@
 
 - Next.js 16 (App Router) with React 19 and TypeScript.
 - CSS Modules for component styles; do not introduce Tailwind for this project.
-- UI primitives from **Radix UI** (headless, styleable): `@radix-ui/react-select`, `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`.
+- UI primitives from **Radix UI** (headless, styleable): `@radix-ui/react-select`, `@radix-ui/react-dialog`, `@radix-ui/react-dropdown-menu`, `@radix-ui/react-popover`.
 - Dates with `react-day-picker` (`DatePicker`); the month grid is custom (`MonthPicker`). Color with `react-colorful` (`ColorPicker`).
 - Icons: `react-icons/hi2` (Heroicons v2). Nav items use the filled/outline pair pattern (`HiXxx` when active, `HiOutlineXxx` otherwise).
 - Typography via `next/font/google`: Space Grotesk (headings/brand), Inter (body), JetBrains Mono (money/numbers). Exposed as `--font-space-grotesk`, `--font-inter`, `--font-jetbrains-mono` and set on `<body>` (not `<html>`, to avoid a Turbopack dev hydration mismatch).
@@ -39,8 +39,9 @@
 ## Components
 
 - Layout: `Sidebar` (desktop nav, ≥768px), `MobileNav` (top bar + bottom nav, <768px), `Card` (reusable panel with optional `title`).
-- Forms: `TransactionForm` (shared by create and edit), `Select` (Radix), `DatePicker`, `ColorPicker`.
+- Forms: `TransactionForm` (shared by create and edit), `Select` (Radix), `DatePicker` (Radix Popover), `ColorPicker`.
 - Lists: `ActionsMenu` (Radix dropdown with edit/archive actions), `StatusFilter` (active/archived/all chips), `MonthPicker`.
+- Transfers: `/transfers` lists and creates same-currency transfers through `api.listTransfers`/`api.createTransfer`; transfer movements remain visible in `/transactions` because they affect account balances.
 - `src/components/` = reusable UI; `src/lib/` = non-UI code (`api/`, `context/`, `utils/`).
 - Pages are Client Components when they hold state (`"use client"`); mutations call the API client directly and refresh state locally (no Server Actions).
 
