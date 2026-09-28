@@ -105,6 +105,8 @@ export interface Transaction {
   transferId: string | null;
   accountId: string;
   categoryId: string | null;
+  account?: AccountBase;
+  category?: Category;
   createdAt: string;
   updatedAt: string;
 }

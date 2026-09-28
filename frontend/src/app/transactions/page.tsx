@@ -337,15 +337,11 @@ export default function TransactionsPage() {
                   <strong>{transaction.concept}</strong>
                   <span>
                     {transaction.date.slice(0, 10)} ·{" "}
-                    {accounts.find((a) => a.id === transaction.accountId)?.name ??
-                      "—"}{" "}
+                    {transaction.account?.name ?? "—"}{" "}
                     ·{" "}
-                    {transaction.categoryId
-                      ? (categories.find((c) => c.id === transaction.categoryId)
-                          ?.name ?? "—")
-                      : transaction.transferId
-                        ? "Transferencia"
-                        : "Sin categoría"}
+                    {transaction.transferId
+                      ? "Transferencia"
+                      : transaction.category?.name ?? "Sin categoría"}
                   </span>
                 </div>
                 <div className={styles.transactionActions}>
