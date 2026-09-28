@@ -52,6 +52,30 @@ describe('AccountsService', () => {
       expect(result.total).toBe(1);
       expect(result.data[0].currentBalance.toString()).toBe('130');
     });
+
+    it('incluye los movimientos de transferencia en el saldo actual', async () => {
+      const cuenta = {
+        id: 'a1',
+        name: 'Cuenta principal',
+        initialBalance: new Prisma.Decimal('100'),
+        currency: 'EUR',
+        isArchived: false,
+      };
+      prisma.account.findMany.mockResolvedValue([cuenta]);
+      prisma.account.count.mockResolvedValue(1);
+      prisma.transaction.groupBy.mockResolvedValue([
+        { accountId: 'a1', type: 'EXPENSE', _sum: { accountAmount: new Prisma.Decimal('50') } },
+      ]);
+
+      const result = await service.findAll({ page: 1, limit: 20 });
+
+      expect(prisma.transaction.groupBy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { accountId: { in: ['a1'] } },
+        }),
+      );
+      expect(result.data[0].currentBalance.toString()).toBe('50');
+    });
   });
 
   describe('create', () => {

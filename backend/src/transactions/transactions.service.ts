@@ -47,7 +47,7 @@ export class TransactionsService {
   }
 
   async findAll(query: TransactionQueryDto) {
-    const { from, to, categoryId, type, search, page, limit } = query;
+    const { from, to, categoryId, accountId, type, search, page, limit } = query;
 
     const where: Prisma.TransactionWhereInput = {
       ...(from || to
@@ -59,6 +59,7 @@ export class TransactionsService {
           }
         : {}),
       ...(categoryId && { categoryId }),
+      ...(accountId && { accountId }),
       ...(type && { type }),
       ...(search && { concept: { contains: search, mode: 'insensitive' } }),
     };

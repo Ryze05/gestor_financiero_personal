@@ -95,7 +95,7 @@ export class AccountsService {
 
     const groups = await this.prisma.transaction.groupBy({
       by: ['accountId', 'type'],
-      where: { accountId: { in: accountIds }, transferId: null },
+      where: { accountId: { in: accountIds } },
       _sum: { accountAmount: true },
     });
 

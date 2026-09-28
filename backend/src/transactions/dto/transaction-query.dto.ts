@@ -21,6 +21,11 @@ export class TransactionQueryDto extends PaginationQueryDto {
   @IsUUID()
   categoryId?: string;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  accountId?: string;
+
   @ApiPropertyOptional({ enum: TransactionType })
   @IsOptional()
   @IsEnum(TransactionType)
