@@ -2,10 +2,13 @@ import type {
   Account,
   Category,
   CreateTransactionInput,
+  CreateTransferInput,
   DashboardSummary,
   Paginated,
   Transaction,
   TransactionQuery,
+  Transfer,
+  TransferQuery,
   UpdateTransactionInput,
 } from "./types";
 
@@ -118,4 +121,18 @@ export const api = {
 
   restoreCategory: (id: string) =>
     request<Category>(`/categories/${id}/restore`, { method: "PATCH" }),
+
+  //----------------------------------------------------------------------------
+
+  listTransfers: (query?: TransferQuery) =>
+    request<Paginated<Transfer>>(`/transfers${params(query ?? {})}`),
+
+  createTransfer: (body: CreateTransferInput) =>
+    request<Transfer>("/transfers", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  deleteTransfer: (id: string) =>
+    request<void>(`/transfers/${id}`, { method: "DELETE" }),
 };

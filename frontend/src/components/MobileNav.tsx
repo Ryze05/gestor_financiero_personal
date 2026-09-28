@@ -7,6 +7,8 @@ import {
   HiOutlineChartPie,
   HiBanknotes,
   HiOutlineBanknotes,
+  HiArrowsRightLeft,
+  HiOutlineArrowsRightLeft,
   HiWallet,
   HiOutlineWallet,
   HiTag,
@@ -29,6 +31,12 @@ const NAV_LINKS = [
     label: "Movimientos",
     icon: HiBanknotes,
     iconOutline: HiOutlineBanknotes,
+  },
+  {
+    href: "/transfers",
+    label: "Traspasos",
+    icon: HiArrowsRightLeft,
+    iconOutline: HiOutlineArrowsRightLeft,
   },
   {
     href: "/accounts",

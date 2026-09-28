@@ -18,6 +18,11 @@
   color: var(--foreground);
 }
 
+.trigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .trigger svg {
   width: 18px;
   height: 18px;

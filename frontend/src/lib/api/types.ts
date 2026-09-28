@@ -7,6 +7,7 @@ export interface TransactionQuery {
   from?: string;
   to?: string;
   categoryId?: string;
+  accountId?: string;
   type?: TransactionType;
   search?: string;
   page?: number;
@@ -30,7 +31,40 @@ export type UpdateTransactionInput = Partial<
   Omit<CreateTransactionInput, "source" | "externalId">
 >;
 
-export interface Account {
+export interface TransferQuery {
+  from?: string;
+  to?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface Transfer {
+  id: string;
+  amount: string;
+  sourceCurrency: Currency;
+  destinationAmount: string;
+  destinationCurrency: Currency;
+  exchangeRate: string;
+  date: string;
+  concept: string | null;
+  sourceAccountId: string;
+  destinationAccountId: string;
+  createdAt: string;
+  updatedAt: string;
+  sourceAccount?: AccountBase;
+  destinationAccount?: AccountBase;
+}
+
+export interface CreateTransferInput {
+  amount: number;
+  date: string;
+  sourceAccountId: string;
+  destinationAccountId: string;
+  concept?: string;
+}
+
+export interface AccountBase {
   id: string;
   name: string;
   initialBalance: string;
@@ -38,6 +72,9 @@ export interface Account {
   isArchived: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface Account extends AccountBase {
   currentBalance: string;
 }
 

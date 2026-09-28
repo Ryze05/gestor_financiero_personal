@@ -14,6 +14,7 @@ import DatePicker from "@/components/DatePicker";
 import ActionsMenu from "@/components/ActionsMenu";
 import Modal from "@/components/Dialog";
 import TransactionForm from "@/components/TransactionForm";
+import SelectField from "@/components/Select";
 import { api, ApiError } from "@/lib/api/client";
 import { toApiDate } from "@/lib/utils/date";
 import { formatMoney } from "@/lib/utils/money";
@@ -33,6 +34,7 @@ export default function TransactionsPage() {
   const [search, setSearch] = useState("");
   const [type, setType] = useState<TransactionType | "">("");
   const [categoryId, setCategoryId] = useState("");
+  const [accountId, setAccountId] = useState("");
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [showMoreFilters, setShowMoreFilters] = useState(false);
@@ -40,6 +42,7 @@ export default function TransactionsPage() {
   const [to, setTo] = useState<Date>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [referencesLoaded, setReferencesLoaded] = useState(false);
   const [deleting, setDeleting] = useState<Transaction | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [deletingError, setDeletingError] = useState<string | null>(null);
@@ -73,9 +76,22 @@ export default function TransactionsPage() {
         if (!cancelled) {
           setCategories(categoriesRes.data);
           setAccounts(accountsRes.data);
+          const active = accountsRes.data.filter(
+            (account) => !account.isArchived,
+          );
+          const saved = window.localStorage.getItem("lastAccountId");
+          if (
+            saved !== null &&
+            (saved === "" || active.some((a) => a.id === saved))
+          ) {
+            setAccountId(saved);
+          } else {
+            setAccountId(active[0]?.id ?? "");
+          }
+          setReferencesLoaded(true);
         }
       } catch {
-        // The transaction list remains usable if references fail to load.
+        if (!cancelled) setReferencesLoaded(true);
       }
     }
 
@@ -90,6 +106,7 @@ export default function TransactionsPage() {
     let cancelled = false;
 
     async function loadTransactions() {
+      if (!referencesLoaded) return;
       setLoading(true);
       setError(null);
 
@@ -99,6 +116,7 @@ export default function TransactionsPage() {
         search: search || undefined,
         type: type || undefined,
         categoryId: categoryId || undefined,
+        accountId: accountId || undefined,
         page: 1,
         limit: 20,
       };
@@ -128,21 +146,29 @@ export default function TransactionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [search, type, categoryId, from, to]);
+  }, [search, type, categoryId, accountId, from, to, referencesLoaded]);
+
+  function handleAccountChange(value: string) {
+    setAccountId(value);
+    window.localStorage.setItem("lastAccountId", value);
+  }
 
   function clearFilters() {
     setSearchInput("");
     setSearch("");
     setType("");
     setCategoryId("");
+    setAccountId("");
     setFrom(undefined);
     setTo(undefined);
+    window.localStorage.setItem("lastAccountId", "");
   }
 
   const hasFilters =
     Boolean(searchInput.trim()) ||
     Boolean(search.trim()) ||
     Boolean(type) ||
+    Boolean(accountId) ||
     Boolean(categoryId) ||
     Boolean(from) ||
     Boolean(to);
@@ -226,6 +252,28 @@ export default function TransactionsPage() {
             ))}
           </div>
 
+          <div className={styles.accountFilter}>
+            {referencesLoaded && (
+              <SelectField
+                value={accountId || "all"}
+                onChange={(value) =>
+                  handleAccountChange(value === "all" ? "" : value)
+                }
+                placeholder="Todas las cuentas"
+                ariaLabel="Filtrar por cuenta"
+                options={[
+                  { value: "all", label: "Todas las cuentas" },
+                  ...accounts
+                    .filter((account) => !account.isArchived)
+                    .map((account) => ({
+                      value: account.id,
+                      label: account.name,
+                    })),
+                ]}
+              />
+            )}
+          </div>
+
           <div className={styles.dateFilters}>
             <DatePicker value={from} onChange={setFrom} placeholder="Desde" />
             <DatePicker
@@ -242,17 +290,21 @@ export default function TransactionsPage() {
           <div className={styles.moreFilters}>
             <label className={styles.categoryFilter}>
               <span>Categoría</span>
-              <select
-                value={categoryId}
-                onChange={(event) => setCategoryId(event.target.value)}
-              >
-                <option value="">Todas las categorías</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+              <SelectField
+                value={categoryId || "all"}
+                onChange={(value) =>
+                  setCategoryId(value === "all" ? "" : value)
+                }
+                placeholder="Todas las categorías"
+                ariaLabel="Filtrar por categoría"
+                options={[
+                  { value: "all", label: "Todas las categorías" },
+                  ...categories.map((category) => ({
+                    value: category.id,
+                    label: category.name,
+                  })),
+                ]}
+              />
             </label>
           </div>
         )}
@@ -291,7 +343,9 @@ export default function TransactionsPage() {
                     {transaction.categoryId
                       ? (categories.find((c) => c.id === transaction.categoryId)
                           ?.name ?? "—")
-                      : "Sin categoría"}
+                      : transaction.transferId
+                        ? "Transferencia"
+                        : "Sin categoría"}
                   </span>
                 </div>
                 <div className={styles.transactionActions}>
@@ -306,19 +360,24 @@ export default function TransactionsPage() {
                     {formatMoney(transaction.amount, transaction.currency)}
                   </span>
                   <ActionsMenu
-                    items={[
-                      {
-                        label: "Editar",
-                        icon: <HiPencil />,
-                        onSelect: () => setEditing(transaction),
-                      },
-                      {
-                        label: "Eliminar",
-                        icon: <HiTrash />,
-                        onSelect: () => setDeleting(transaction),
-                        danger: true,
-                      },
-                    ]}
+                    disabled={Boolean(transaction.transferId)}
+                    items={
+                      transaction.transferId
+                        ? []
+                        : [
+                            {
+                              label: "Editar",
+                              icon: <HiPencil />,
+                              onSelect: () => setEditing(transaction),
+                            },
+                            {
+                              label: "Eliminar",
+                              icon: <HiTrash />,
+                              onSelect: () => setDeleting(transaction),
+                              danger: true,
+                            },
+                          ]
+                    }
                   />
                 </div>
               </article>
