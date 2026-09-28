@@ -11,27 +11,9 @@
   flex-wrap: wrap;
 }
 
-.currencyGroup {
-  display: flex;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.currencyBtn,
-.currencyActive {
-  padding: 8px 14px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: var(--font-sans);
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.currencyActive {
-  background: var(--primary);
-  color: var(--foreground);
+.accountFilter {
+  flex: 0 0 auto;
+  min-width: 200px;
 }
 
 .grid {

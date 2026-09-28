@@ -61,11 +61,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  getDashboard: (query?: {
-    from?: string;
-    to?: string;
-    currency?: string;
-  }) => request<DashboardSummary>(`/dashboard${params(query ?? {})}`),
+  getDashboard: (query: { accountId: string; from?: string; to?: string }) =>
+    request<DashboardSummary>(`/dashboard${params(query)}`),
 
   //----------------------------------------------------------------------------
 

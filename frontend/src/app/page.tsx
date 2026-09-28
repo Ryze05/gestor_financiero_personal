@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api/client";
-import type { DashboardSummary } from "@/lib/api/types";
+import type { Account, DashboardSummary } from "@/lib/api/types";
 import Card from "@/components/Card";
 import MonthPicker from "@/components/MonthPicker";
+import SelectField from "@/components/Select";
 import styles from "./dashboard.module.css";
 
 function monthRange(value: string): { from: string; to: string } {
@@ -15,8 +16,6 @@ function monthRange(value: string): { from: string; to: string } {
     to: `${value}-${String(lastDay).padStart(2, "0")}`,
   };
 }
-
-const CURRENCIES = ["EUR", "USD"] as const;
 
 const fmt = new Intl.NumberFormat("es-ES", {
   minimumFractionDigits: 2,
@@ -32,12 +31,42 @@ export default function Home() {
   const [month, setMonth] = useState(() =>
     new Date().toISOString().slice(0, 7),
   );
-  const [currency, setCurrency] = useState<"EUR" | "USD">("EUR");
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountId, setAccountId] = useState("");
   const [data, setData] = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadAccounts() {
+      try {
+        const res = await api.listAccounts({ page: 1, limit: 100 });
+        const active = res.data.filter((account) => !account.isArchived);
+        if (cancelled) return;
+        setAccounts(active);
+        const saved = window.localStorage.getItem("lastAccountId");
+        if (saved && active.some((a) => a.id === saved)) {
+          setAccountId(saved);
+        } else if (active.length > 0) {
+          setAccountId(active[0].id);
+        }
+      } catch {
+        if (!cancelled) {
+          setError("No se pudieron cargar las cuentas.");
+        }
+      }
+    }
+
+    loadAccounts();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!accountId) return;
     let cancelled = false;
 
     async function load() {
@@ -46,7 +75,7 @@ export default function Home() {
       try {
         const res = await api.getDashboard({
           ...monthRange(month),
-          currency,
+          accountId,
         });
         if (!cancelled) setData(res);
       } catch (err) {
@@ -63,25 +92,26 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [month, currency]);
+  }, [month, accountId]);
 
   return (
     <div className={styles.page}>
       <div className={styles.controls}>
         <MonthPicker value={month} onChange={setMonth} />
-        <div className={styles.currencyGroup}>
-          {CURRENCIES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              onClick={() => setCurrency(c)}
-              className={
-                currency === c ? styles.currencyActive : styles.currencyBtn
-              }
-            >
-              {c}
-            </button>
-          ))}
+        <div className={styles.accountFilter}>
+          <SelectField
+            value={accountId}
+            onChange={(value) => {
+              setAccountId(value);
+              window.localStorage.setItem("lastAccountId", value);
+            }}
+            placeholder="Selecciona una cuenta"
+            ariaLabel="Filtrar por cuenta"
+            options={accounts.map((account) => ({
+              value: account.id,
+              label: account.name,
+            }))}
+          />
         </div>
       </div>
 

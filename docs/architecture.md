@@ -446,7 +446,7 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 
 - Proyecto Next.js con CSS Modules (hecho).
 - Layout con sidebar responsive, temas claro/oscuro y tipografias (hecho).
-- Dashboard con selector de mes y divisa (hecho).
+- Dashboard con selector de mes y de cuenta (hecho).
 - Listado de movimientos con filtros (texto, tipo, categoria y rango de fechas) y acciones de editar/borrar (hecho).
 - Alta de movimiento reutilizando `TransactionForm` (hecho).
 - Pantallas de cuentas y categorias con alta, archivar/restaurar y filtro por estado (hecho).
