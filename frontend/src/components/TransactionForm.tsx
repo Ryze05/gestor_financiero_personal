@@ -22,6 +22,7 @@ export interface TransactionFormInitial {
   accountId?: string;
   categoryId?: string;
   notes?: string;
+  currency?: Currency;
 }
 
 export default function TransactionForm({
@@ -46,6 +47,9 @@ export default function TransactionForm({
   const [accountId, setAccountId] = useState(initial?.accountId ?? "");
   const [categoryId, setCategoryId] = useState(initial?.categoryId ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
+  const [currency, setCurrency] = useState<Currency>(
+    initial?.currency ?? "EUR",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,7 +70,6 @@ export default function TransactionForm({
   );
 
   const selectedAccount = accounts.find((account) => account.id === accountId);
-  const currency: Currency = selectedAccount?.currency ?? "EUR";
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -144,6 +147,30 @@ export default function TransactionForm({
         </div>
       </label>
 
+      <div className={styles.field}>
+        <span className={styles.label}>Moneda</span>
+        <div className={styles.typeFilters}>
+          {(["EUR", "USD"] as Currency[]).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setCurrency(option)}
+              className={
+                currency === option ? styles.chipActive : styles.chip
+              }
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {selectedAccount && currency !== selectedAccount.currency && (
+        <p className={styles.hint}>
+          La moneda es distinta a la de la cuenta: se convertirá al guardar.
+        </p>
+      )}
+
       <label className={styles.field}>
         <span className={styles.label}>Concepto</span>
         <input
@@ -163,7 +190,11 @@ export default function TransactionForm({
           <span className={styles.label}>Cuenta</span>
           <SelectField
             value={accountId}
-            onChange={setAccountId}
+            onChange={(value) => {
+              setAccountId(value);
+              const next = accounts.find((account) => account.id === value);
+              setCurrency(next?.currency ?? "EUR");
+            }}
             placeholder="Selecciona una cuenta"
             ariaLabel="Cuenta"
             options={accounts.map((account) => ({

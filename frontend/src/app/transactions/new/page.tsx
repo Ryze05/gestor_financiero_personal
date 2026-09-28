@@ -31,8 +31,10 @@ export default function NewTransactionPage() {
           api.listCategories({ page: 1, limit: 100 }),
         ]);
         if (!cancelled) {
-          setAccounts(accountsRes.data);
-          setCategories(categoriesRes.data);
+          setAccounts(accountsRes.data.filter((account) => !account.isArchived));
+          setCategories(
+            categoriesRes.data.filter((category) => !category.isArchived),
+          );
         }
       } catch (err) {
         if (!cancelled) {
