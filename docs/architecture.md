@@ -286,26 +286,30 @@ Todas las respuestas de cuentas incluyen `currentBalance`, calculado como `initi
 
 ### Dashboard
 
-- `GET /api/v1/dashboard?from=YYYY-MM-DD&to=YYYY-MM-DD&currency=EUR`
+- `GET /api/v1/dashboard?accountId=...&from=YYYY-MM-DD&to=YYYY-MM-DD`
 
-Devuelve el resumen de un periodo en una moneda:
+Devuelve el resumen de un periodo para una cuenta:
 
 ```json
 {
   "from": "2026-09-01",
   "to": "2026-09-30",
   "currency": "EUR",
-  "income": "1500",
-  "expense": "500",
-  "balance": "1000",
-  "count": 7,
-  "byCategory": [{ "categoryId": "...", "name": "Alimentación", "total": "120" }]
+  "income": "1750",
+  "expense": "1052.93",
+  "openingBalance": "1450",
+  "balance": "697.07",
+  "count": 13,
+  "byCategory": [],
+  "timeline": []
 }
 ```
 
-- `currency`: por defecto `EUR`; los totales se calculan solo sobre movimientos de esa moneda (no se mezclan divisas).
-- Incluye las transferencias: cuentan como gasto en la cuenta origen y como ingreso en la cuenta destino.
-- `byCategory` agrupa unicamente los **gastos** por categoria, con el nombre de la categoria.
+- `accountId`: obligatorio.
+- `openingBalance`: saldo con el que la cuenta entra al periodo (saldo inicial + movimientos anteriores a `from`).
+- `balance`: `initialBalance + ingresos - gastos` del periodo.
+- El frontend muestra el "Saldo actual" (all-time) con `currentBalance` de `/accounts`, no con `balance`.
+- Incluye las transferencias (cuentan como gasto/ingreso) y se permiten saldos negativos (el frontend avisa, no bloquea).
 - Los importes se devuelven como string (son `Decimal`).
 
 Los movimientos pueden recibirse en una moneda distinta a la de su cuenta. El MVP permitira `EUR` y `USD`; los balances se calcularan en la moneda de cada cuenta despues de convertir cada movimiento.
@@ -455,7 +459,7 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 
 - Proyecto Next.js con CSS Modules (hecho).
 - Layout con sidebar responsive, temas claro/oscuro y tipografias (hecho).
-- Dashboard con selector de mes y de cuenta (hecho).
+- Dashboard con selector de mes y de cuenta, hero de "Saldo actual" (all-time) y "Últimos movimientos" (hecho).
 - Listado de movimientos con filtros (texto, tipo, cuenta, categoria, origen, rango de fechas e importe de cuenta) y acciones de editar/borrar (hecho).
 - Alta de movimiento reutilizando `TransactionForm` (hecho).
 - Pantallas de cuentas y categorias con alta, archivar/restaurar y filtro por estado (hecho).
@@ -478,6 +482,9 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 - Nombres de cuenta y categoria en la respuesta de movimientos mediante `include` de relaciones (hecho).
 - Estados de carga con skeleton en listados y selectores para evitar parpadeos al restaurar la preferencia de cuenta (hecho).
 - Editar (`PATCH`) transferencias: actualizar la transferencia y sus dos movimientos enlazados de forma atomica (importe, fecha, cuentas y monedas) (hecho).
+- Endpoint `GET /exchange/rate` (conversion por API en backend) (hecho).
+- Aviso de saldo negativo en el frontend (modal) al crear gastos/transferencias; el backend permite negativos (hecho).
+- Tool MCP `get_rate` y regla de saldo negativo en el agente (hecho).
 - Estos filtros se implementaron con cambios coordinados en DTOs, queries, contrato API y frontend.
 
 ### Rebanada 5: Nivel 2 (si el tiempo lo permite)
