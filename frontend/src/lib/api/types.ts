@@ -141,6 +141,7 @@ export interface DashboardSummary {
   currency: Currency;
   income: string;
   expense: string;
+  openingBalance: string;
   balance: string;
   count: number;
   byCategory: DashboardByCategory[];

@@ -29,6 +29,22 @@ export class DashboardService {
         : {}),
     };
 
+    let openingBalance = account.initialBalance;
+    if (from) {
+      const prior = await this.prisma.transaction.groupBy({
+        by: ['type'],
+        where: { accountId, date: { lt: new Date(from) } },
+        _sum: { accountAmount: true },
+      });
+      for (const group of prior) {
+        const sum = group._sum.accountAmount ?? new Prisma.Decimal(0);
+        openingBalance =
+          group.type === 'INCOME'
+            ? openingBalance.plus(sum)
+            : openingBalance.minus(sum);
+      }
+    }
+
     const [typeGroups, categoryGroups, timelineGroups] = await Promise.all([
       this.prisma.transaction.groupBy({
         by: ['type'],
@@ -168,6 +184,7 @@ export class DashboardService {
       currency: account.currency,
       income: income.toString(),
       expense: expense.toString(),
+      openingBalance: openingBalance.toString(),
       balance: account.initialBalance.plus(income).minus(expense).toString(),
       count,
       byCategory,

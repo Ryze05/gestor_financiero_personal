@@ -4,6 +4,115 @@
   gap: 16px;
 }
 
+.hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 24px 28px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.heroBalance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.heroBalanceValue {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  gap: 4px;
+}
+
+.heroLabel {
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+}
+
+.heroValue {
+  font-family: var(--font-mono);
+  font-size: 40px;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.heroAccount {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.heroMovements {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-left: 1px solid var(--border);
+  padding-left: 24px;
+}
+
+.heroMovementsHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.heroLink {
+  color: var(--primary);
+  font-size: var(--text-sm);
+}
+
+.movementsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.movement {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: var(--text-sm);
+}
+
+.movementLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.movementDate {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.movementConcept {
+  color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movementAmount {
+  font-family: var(--font-mono);
+}
+
+.skeletonLabel { width: 110px; height: 14px; }
+.skeletonValue { width: 200px; height: 44px; }
+.skeletonAccount { width: 130px; height: 14px; }
+.skeletonRow { width: 60%; height: 14px; }
+.skeletonAmount { width: 72px; height: 14px; }
+.skeletonMonth { width: 150px; height: 40px; }
+
 .controls {
   display: flex;
   align-items: center;
@@ -20,14 +129,14 @@
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   grid-template-areas:
-    "balance balance balance income income income expense expense expense count count count"
+    "income income income income expense expense expense expense count count count count"
     "accumulated accumulated accumulated accumulated accumulated accumulated category category category category category category"
     "timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline";
   gap: 16px;
 }
 
-.balance {
-  grid-area: balance;
+.grid > div {
+  gap: 24px;
 }
 
 .income {
@@ -58,7 +167,6 @@
   font-family: var(--font-mono);
   font-size: 28px;
   font-weight: 600;
-  margin-top: 24px;
 }
 
 .valuePositive {
@@ -80,7 +188,7 @@
 @media (max-width: 1023px) {
   .grid {
     grid-template-areas:
-      "balance balance balance income income income expense expense expense count count count"
+      "income income income income expense expense expense expense count count count count"
       "accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated"
       "category category category category category category category category category category category category"
       "timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline";
@@ -91,7 +199,6 @@
   .grid {
     grid-template-columns: 1fr;
     grid-template-areas:
-      "balance"
       "income"
       "expense"
       "count"
@@ -102,5 +209,20 @@
 
   .value {
     font-size: 24px;
+  }
+
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .heroMovements {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-left: 0;
+    padding-top: 16px;
+  }
+
+  .heroValue {
+    font-size: 32px;
   }
 }

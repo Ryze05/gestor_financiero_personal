@@ -57,6 +57,7 @@ describe('DashboardService', () => {
       currency: Currency.EUR,
       income: '0',
       expense: '0',
+      openingBalance: '0',
       balance: '0',
       count: 0,
       byCategory: [],
@@ -130,6 +131,7 @@ describe('DashboardService', () => {
   it('agrupa ingresos, gastos y transferencias por fecha (rellenando días vacíos)', async () => {
     stubAccount(Currency.EUR);
     prisma.transaction.groupBy
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
