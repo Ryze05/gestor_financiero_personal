@@ -3,6 +3,12 @@ export type TransactionType = "INCOME" | "EXPENSE";
 export type TransactionSource = "WEB" | "OPENCLAW";
 export type CategoryType = "INCOME" | "EXPENSE" | "BOTH";
 
+export interface ExchangeRate {
+  from: Currency;
+  to: Currency;
+  rate: string;
+}
+
 export interface TransactionQuery {
   from?: string;
   to?: string;

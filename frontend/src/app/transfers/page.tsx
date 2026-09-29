@@ -8,6 +8,7 @@ import SelectField from "@/components/Select";
 import DatePicker from "@/components/DatePicker";
 import ActionsMenu from "@/components/ActionsMenu";
 import SkeletonList from "@/components/SkeletonList";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { api, ApiError } from "@/lib/api/client";
 import { formatMoney } from "@/lib/utils/money";
 import { toApiDate } from "@/lib/utils/date";
@@ -20,6 +21,10 @@ export default function TransfersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [fundsWarning, setFundsWarning] = useState<{
+    projected: number;
+    currency: Currency;
+  } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +117,19 @@ export default function TransfersPage() {
     }
     if (!date) return setFormError("Selecciona una fecha.");
 
+    if (sourceAccount) {
+      const projected = Number(sourceAccount.currentBalance) - value;
+      if (projected < 0) {
+        setFundsWarning({ projected, currency: sourceAccount.currency });
+        return;
+      }
+    }
+
+    await performSubmit();
+  }
+
+  async function performSubmit() {
+    const value = Number(amount);
     setSubmitting(true);
     setFormError(null);
     try {
@@ -354,6 +372,20 @@ export default function TransfersPage() {
           </button>
         </div>
       </Modal>
+
+      <ConfirmDialog
+        open={fundsWarning !== null}
+        title="Saldo insuficiente"
+        message={`La cuenta de origen quedará en ${formatMoney(
+          String(fundsWarning?.projected ?? 0),
+          fundsWarning?.currency ?? "EUR",
+        )}. ¿Continuar?`}
+        onCancel={() => setFundsWarning(null)}
+        onConfirm={() => {
+          setFundsWarning(null);
+          performSubmit();
+        }}
+      />
     </div>
   );
 }

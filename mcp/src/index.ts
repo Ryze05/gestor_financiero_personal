@@ -88,7 +88,7 @@ function createServer(): McpServer {
     'get_dashboard',
     {
       description:
-        'Resumen de un periodo para una cuenta: ingresos, gastos, balance y desglose por categoría.',
+        'Resumen de un periodo para una cuenta: ingresos, gastos, openingBalance (saldo previo al periodo), balance y desglose por categoría.',
       inputSchema: z.object({
         accountId: z.string().uuid(),
         from: z.string().describe('YYYY-MM-DD').optional(),
@@ -100,6 +100,23 @@ function createServer(): McpServer {
       if (from) qs.set('from', from);
       if (to) qs.set('to', to);
       const data = await api.get(`/dashboard?${qs.toString()}`);
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'get_rate',
+    {
+      description:
+        'Devuelve el tipo de cambio entre dos monedas (EUR/USD). Útil para convertir importes ' +
+        'o comprobar saldo antes de un gasto en otra moneda.',
+      inputSchema: z.object({
+        from: z.enum(['EUR', 'USD']),
+        to: z.enum(['EUR', 'USD']),
+      }),
+    },
+    async ({ from, to }) => {
+      const data = await api.get(`/exchange/rate?from=${from}&to=${to}`);
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
     },
   );

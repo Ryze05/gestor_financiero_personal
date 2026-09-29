@@ -86,7 +86,7 @@ async function main() {
     { type: 'EXPENSE', amount: '35.00', concept: 'Ocio / cine', date: '2026-09-20', category: 'Ocio', account: principal },
     { type: 'EXPENSE', amount: '89.90', concept: 'Luz y agua', date: '2026-09-22', category: 'Suministros', account: principal },
     // Revolut (USD)
-    { type: 'INCOME', amount: '80.00', concept: 'Ventas online', date: '2026-09-05', category: 'Ventas', account: revolut },
+    { type: 'INCOME', amount: '140.00', concept: 'Ventas online', date: '2026-09-05', category: 'Ventas', account: revolut },
     { type: 'EXPENSE', amount: '89.99', concept: 'Compra online', date: '2026-09-12', category: 'Tecnología', account: revolut },
     { type: 'EXPENSE', amount: '15.99', concept: 'Suscripción USD', date: '2026-09-14', category: 'Suscripciones', account: revolut },
   ] as const;
