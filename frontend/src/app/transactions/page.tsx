@@ -17,21 +17,23 @@ import TransactionForm from "@/components/TransactionForm";
 import SelectField from "@/components/Select";
 import SkeletonList from "@/components/SkeletonList";
 import SkeletonSelect from "@/components/SkeletonSelect";
+import TicketRow from "@/components/TicketRow";
 import { api, ApiError } from "@/lib/api/client";
 import { toApiDate } from "@/lib/utils/date";
 import { formatMoney } from "@/lib/utils/money";
 import type {
   Account,
+  Activity,
+  ActivityQuery,
   Category,
   Transaction,
-  TransactionQuery,
   TransactionSource,
   TransactionType,
 } from "@/lib/api/types";
 import styles from "./transactions.module.css";
 
 export default function TransactionsPage() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [activities, setActivities] = useState<Activity[]>([]);
   const [total, setTotal] = useState(0);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
@@ -118,13 +120,13 @@ export default function TransactionsPage() {
       setLoading(true);
       setError(null);
 
-      const query: TransactionQuery = buildQuery();
+      const query: ActivityQuery = buildQuery();
 
       try {
-        const result = await api.listTransactions(query);
+        const result = await api.listActivities(query);
 
         if (!cancelled) {
-          setTransactions(result.data);
+          setActivities(result.data);
           setTotal(result.total);
         }
       } catch (err) {
@@ -153,7 +155,7 @@ export default function TransactionsPage() {
     window.localStorage.setItem("lastAccountId", value);
   }
 
-  function buildQuery(): TransactionQuery {
+  function buildQuery(): ActivityQuery {
     return {
       from: toApiDate(from),
       to: toApiDate(to),
@@ -385,73 +387,89 @@ export default function TransactionsPage() {
           <span className={styles.count}>{total} movimientos</span>
         </div>
 
-        {loading && transactions.length === 0 && <SkeletonList />}
+        {loading && activities.length === 0 && <SkeletonList />}
 
         {!loading && error && <p className={styles.error}>{error}</p>}
 
-        {!loading && !error && transactions.length === 0 && (
+        {!loading && !error && activities.length === 0 && (
           <div className={styles.emptyState}>
             <p>No hay movimientos para mostrar.</p>
           </div>
         )}
 
-        {!error && transactions.length > 0 && (
+        {!error && activities.length > 0 && (
           <div className={styles.transactionList}>
-            {transactions.map((transaction) => (
-              <article key={transaction.id} className={styles.transactionRow}>
-                <div className={styles.transactionInfo}>
-                  <strong>{transaction.concept}</strong>
-                  <span>
-                    {transaction.date.slice(0, 10)} ·{" "}
-                    {transaction.account?.name ?? "—"}{" "}
-                    ·{" "}
-                    {transaction.category?.name ?? "Sin categoría"}
-                  </span>
-                </div>
-                <div className={styles.transactionActions}>
-                  <span
-                    className={
-                      transaction.type === "EXPENSE"
-                        ? styles.expenseAmount
-                        : styles.incomeAmount
-                    }
-                  >
-                    {transaction.type === "EXPENSE" ? "-" : "+"}
-                    {formatMoney(transaction.amount, transaction.currency)}
-                  </span>
-                  {transaction.exchangeRate !== "1" && (
-                    <span className={styles.converted}>
-                      →{" "}
-                      {formatMoney(
-                        transaction.accountAmount,
-                        transaction.account?.currency ?? transaction.currency,
-                      )}{" "}
-                      @ {transaction.exchangeRate}
+            {activities.map((activity) =>
+              activity.type === "RECEIPT" ? (
+                <TicketRow
+                  key={activity.receipt.id}
+                  receipt={activity.receipt}
+                  lines={activity.transactions}
+                />
+              ) : (
+                <article
+                  key={activity.transaction.id}
+                  className={styles.transactionRow}
+                >
+                  <div className={styles.transactionInfo}>
+                    <strong>{activity.transaction.concept}</strong>
+                    <span>
+                      {activity.transaction.date.slice(0, 10)} ·{" "}
+                      {activity.transaction.account?.name ?? "—"}{" "}
+                      ·{" "}
+                      {activity.transaction.category?.name ?? "Sin categoría"}
                     </span>
-                  )}
-                  <ActionsMenu
-                    disabled={Boolean(transaction.transferId)}
-                    items={
-                      transaction.transferId
-                        ? []
-                        : [
-                            {
-                              label: "Editar",
-                              icon: <HiPencil />,
-                              onSelect: () => setEditing(transaction),
-                            },
-                            {
-                              label: "Eliminar",
-                              icon: <HiTrash />,
-                              onSelect: () => setDeleting(transaction),
-                              danger: true,
-                            },
-                          ]
-                    }
-                  />
-                </div>
-              </article>
-            ))}
+                  </div>
+                  <div className={styles.transactionActions}>
+                    <span
+                      className={
+                        activity.transaction.type === "EXPENSE"
+                          ? styles.expenseAmount
+                          : styles.incomeAmount
+                      }
+                    >
+                      {activity.transaction.type === "EXPENSE" ? "-" : "+"}
+                      {formatMoney(
+                        activity.transaction.amount,
+                        activity.transaction.currency,
+                      )}
+                    </span>
+                    {activity.transaction.exchangeRate !== "1" && (
+                      <span className={styles.converted}>
+                        →{" "}
+                        {formatMoney(
+                          activity.transaction.accountAmount,
+                          activity.transaction.account?.currency ??
+                            activity.transaction.currency,
+                        )}{" "}
+                        @ {activity.transaction.exchangeRate}
+                      </span>
+                    )}
+                    <ActionsMenu
+                      disabled={Boolean(activity.transaction.transferId)}
+                      items={
+                        activity.transaction.transferId
+                          ? []
+                          : [
+                              {
+                                label: "Editar",
+                                icon: <HiPencil />,
+                                onSelect: () =>
+                                  setEditing(activity.transaction),
+                              },
+                              {
+                                label: "Eliminar",
+                                icon: <HiTrash />,
+                                onSelect: () => setDeleting(activity.transaction),
+                                danger: true,
+                              },
+                            ]
+                      }
+                    />
+                  </div>
+                </article>
+              ),
+            )}
           </div>
         )}
       </Card>
@@ -481,8 +499,8 @@ export default function TransactionsPage() {
             onSubmit={async (input) => {
               await api.updateTransaction(editing.id, input);
               setEditing(null);
-              const result = await api.listTransactions(buildQuery());
-              setTransactions(result.data);
+              const result = await api.listActivities(buildQuery());
+              setActivities(result.data);
               setTotal(result.total);
             }}
           />
@@ -523,8 +541,8 @@ export default function TransactionsPage() {
               try {
                 await api.deleteTransaction(deleting.id);
                 setDeleting(null);
-                const result = await api.listTransactions(buildQuery());
-                setTransactions(result.data);
+                const result = await api.listActivities(buildQuery());
+                setActivities(result.data);
                 setTotal(result.total);
               } catch (err) {
                 setDeletingError(

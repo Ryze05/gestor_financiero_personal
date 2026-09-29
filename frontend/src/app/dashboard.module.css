@@ -96,10 +96,21 @@
 }
 
 .movementConcept {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   color: var(--foreground);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
+}
+
+.receiptIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
 .movementAmount {

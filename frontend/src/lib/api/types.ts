@@ -14,6 +14,7 @@ export interface TransactionQuery {
   to?: string;
   categoryId?: string;
   accountId?: string;
+  receiptId?: string;
   type?: TransactionType;
   source?: TransactionSource;
   minAmount?: number;
@@ -99,6 +100,46 @@ export interface Category {
   updatedAt: string;
 }
 
+export interface Receipt {
+  id: string;
+  externalId: string;
+  merchant: string | null;
+  date: string;
+  total: string;
+  currency: Currency;
+  accountId: string;
+  source: TransactionSource;
+  createdAt: string;
+  updatedAt: string;
+  account?: AccountBase;
+}
+
+export type Activity =
+  | {
+      type: "RECEIPT";
+      receipt: Receipt;
+      transactions: Transaction[];
+    }
+  | {
+      type: "TRANSACTION";
+      transaction: Transaction;
+    };
+
+export interface ActivityQuery {
+  accountId?: string;
+  from?: string;
+  to?: string;
+  categoryId?: string;
+  type?: TransactionType;
+  source?: TransactionSource;
+  search?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  onlyReceipts?: boolean;
+  page?: number;
+  limit?: number;
+}
+
 export interface Transaction {
   id: string;
   type: TransactionType;
@@ -112,10 +153,12 @@ export interface Transaction {
   source: TransactionSource;
   externalId: string | null;
   transferId: string | null;
+  receiptId: string | null;
   accountId: string;
   categoryId: string | null;
   account?: AccountBase;
   category?: Category;
+  receipt?: Receipt;
   createdAt: string;
   updatedAt: string;
 }
