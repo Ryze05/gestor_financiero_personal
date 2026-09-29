@@ -15,11 +15,15 @@ describe('DashboardService', () => {
 
   const ACC = 'acc1';
 
-  const stubAccount = (currency: Currency = Currency.EUR) =>
+  const stubAccount = (
+    currency: Currency = Currency.EUR,
+    initialBalance = new Prisma.Decimal('0'),
+  ) =>
     prisma.account.findUnique.mockResolvedValue({
       id: ACC,
       currency,
       isArchived: false,
+      initialBalance,
     });
 
   beforeEach(async () => {
@@ -62,7 +66,7 @@ describe('DashboardService', () => {
   });
 
   it('calcula income, expense, balance y count', async () => {
-    stubAccount();
+    stubAccount(Currency.EUR, new Prisma.Decimal('1000'));
     prisma.transaction.groupBy
       .mockResolvedValueOnce([
         { type: 'INCOME', _sum: { accountAmount: new Prisma.Decimal('1500') }, _count: { _all: 2 } },
@@ -76,12 +80,12 @@ describe('DashboardService', () => {
 
     expect(result.income).toBe('1500');
     expect(result.expense).toBe('500');
-    expect(result.balance).toBe('1000');
+    expect(result.balance).toBe('2000');
     expect(result.count).toBe(7);
   });
 
   it('calcula un balance negativo cuando los gastos superan a los ingresos', async () => {
-    stubAccount();
+    stubAccount(Currency.EUR, new Prisma.Decimal('0'));
     prisma.transaction.groupBy
       .mockResolvedValueOnce([
         { type: 'INCOME', _sum: { accountAmount: new Prisma.Decimal('100') }, _count: { _all: 1 } },

@@ -168,7 +168,7 @@ export class DashboardService {
       currency: account.currency,
       income: income.toString(),
       expense: expense.toString(),
-      balance: income.minus(expense).toString(),
+      balance: account.initialBalance.plus(income).minus(expense).toString(),
       count,
       byCategory,
       timeline: timelineSeries,

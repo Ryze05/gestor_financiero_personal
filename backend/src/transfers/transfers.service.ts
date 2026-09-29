@@ -29,6 +29,10 @@ export class TransfersService {
     const date = new Date(dto.date);
     const concept = dto.concept ?? 'Transferencia';
 
+    const transferCategory = await this.prisma.category.findUnique({
+      where: { name: 'Transferencias' },
+    });
+
     let destinationAmount = amount;
     let exchangeRate = new Prisma.Decimal(1);
     if (source.currency !== destination.currency) {
@@ -67,6 +71,7 @@ export class TransfersService {
           source: 'WEB',
           accountId: sourceAccountId,
           transferId: transfer.id,
+          categoryId: transferCategory?.id,
         },
       });
 
@@ -82,6 +87,7 @@ export class TransfersService {
           source: 'WEB',
           accountId: destinationAccountId,
           transferId: transfer.id,
+          categoryId: transferCategory?.id,
         },
       });
 
@@ -114,6 +120,10 @@ export class TransfersService {
       dto.amount !== undefined ? new Prisma.Decimal(dto.amount) : existing.amount;
     const date = dto.date !== undefined ? new Date(dto.date) : existing.date;
     const concept = dto.concept ?? existing.concept ?? 'Transferencia';
+
+    const transferCategory = await this.prisma.category.findUnique({
+      where: { name: 'Transferencias' },
+    });
 
     let destinationAmount = existing.destinationAmount;
     let exchangeRate = existing.exchangeRate;
@@ -164,6 +174,7 @@ export class TransfersService {
           concept,
           date,
           accountId: sourceAccountId,
+          categoryId: transferCategory?.id,
         },
       });
 
@@ -178,6 +189,7 @@ export class TransfersService {
           concept,
           date,
           accountId: destinationAccountId,
+          categoryId: transferCategory?.id,
         },
       });
 

@@ -171,6 +171,7 @@ export default function Home() {
                 currency={data.currency}
                 formatMoney={money}
                 data={data.timeline}
+                initialBalance={selectedAccount?.initialBalance ?? "0"}
               />
             )}
           </Card>
@@ -183,10 +184,7 @@ export default function Home() {
                 currency={data.currency}
                 formatMoney={money}
                 data={data.byCategory.map((row) => ({
-                  name:
-                    row.categoryId === null
-                      ? "Transferencias"
-                      : row.name ?? "Sin categoría",
+                  name: row.name ?? "Sin categoría",
                   total: row.total,
                 }))}
               />

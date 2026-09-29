@@ -141,7 +141,7 @@ Representa un ingreso o gasto.
 - `notes`: texto opcional.
 - `source`: origen del movimiento, `WEB` u `OPENCLAW` en el MVP.
 - `externalId`: identificador de la operacion externa. Es obligatorio cuando `source` es `OPENCLAW` y no se utiliza para movimientos creados desde la web.
-- `transferId`: referencia opcional a una transferencia. Los movimientos con este campo no cuentan como ingresos o gastos del dashboard.
+- `transferId`: referencia opcional a una transferencia. Los movimientos con este campo cuentan como ingresos o gastos del dashboard (la salida reduce el balance y la entrada lo aumenta).
 - `accountId`: cuenta asociada.
 - `categoryId`: categoria asociada.
 - `createdAt` y `updatedAt`.
@@ -153,7 +153,7 @@ Las transferencias entre cuentas no se representaran como un gasto o ingreso nor
 - movimiento de salida en la cuenta origen;
 - movimiento de entrada en la cuenta destino.
 
-Ambos movimientos tendran el mismo `transferId` y quedaran excluidos de los totales de ingresos y gastos. Si las cuentas tienen monedas distintas, se aplicara un tipo de cambio al movimiento de entrada y se conservaran la tasa y los importes originales.
+Ambos movimientos tendran el mismo `transferId` y cuentan como gasto (en la cuenta origen) o ingreso (en la cuenta destino) en los totales del dashboard y en el saldo de cada cuenta. Si las cuentas tienen monedas distintas, se aplicara un tipo de cambio al movimiento de entrada y se conservaran la tasa y los importes originales.
 
 ### Transfer
 
@@ -282,7 +282,7 @@ La API se documenta con Swagger en `http://localhost:3001/docs`. Las rutas se ge
 
 El seed creara una cuenta inicial para poder probar la aplicacion, pero la API y el frontend permitiran crear mas cuentas. Cada cuenta tendra su propia moneda (`EUR` o `USD`) y sus movimientos no se mezclaran con los de otras cuentas al calcular saldos.
 
-Todas las respuestas de cuentas incluyen `currentBalance`, calculado como `initialBalance + ingresos - gastos` en la moneda de la cuenta, excluyendo las transferencias. El `currency` no es editable (`PATCH` solo admite `name` e `initialBalance`).
+Todas las respuestas de cuentas incluyen `currentBalance`, calculado como `initialBalance + ingresos - gastos` en la moneda de la cuenta. Las transferencias cuentan como gasto en la cuenta origen y como ingreso en la cuenta destino. El `currency` no es editable (`PATCH` solo admite `name` e `initialBalance`).
 
 ### Dashboard
 
@@ -304,7 +304,7 @@ Devuelve el resumen de un periodo en una moneda:
 ```
 
 - `currency`: por defecto `EUR`; los totales se calculan solo sobre movimientos de esa moneda (no se mezclan divisas).
-- Excluye las transferencias (`transferId: null`).
+- Incluye las transferencias: cuentan como gasto en la cuenta origen y como ingreso en la cuenta destino.
 - `byCategory` agrupa unicamente los **gastos** por categoria, con el nombre de la categoria.
 - Los importes se devuelven como string (son `Decimal`).
 
