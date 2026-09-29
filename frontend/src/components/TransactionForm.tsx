@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import DatePicker from "@/components/DatePicker";
 import SelectField from "@/components/Select";
-import { ApiError } from "@/lib/api/client";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { api, ApiError } from "@/lib/api/client";
 import { toApiDate } from "@/lib/utils/date";
+import { formatMoney } from "@/lib/utils/money";
 import type {
   Account,
   Category,
@@ -52,6 +54,10 @@ export default function TransactionForm({
   );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fundsWarning, setFundsWarning] = useState<{
+    projected: number;
+    currency: Currency;
+  } | null>(null);
 
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
@@ -82,6 +88,27 @@ export default function TransactionForm({
     if (!value || value <= 0) return setError("Introduce un importe válido.");
     if (!concept.trim()) return setError("Introduce un concepto.");
 
+    if (type === "EXPENSE" && selectedAccount) {
+      let accountAmount = value;
+      if (currency !== selectedAccount.currency) {
+        const rate = await api.getRate(currency, selectedAccount.currency);
+        accountAmount = Number(rate.rate) * value;
+      }
+      const projected = Number(selectedAccount.currentBalance) - accountAmount;
+      if (projected < 0) {
+        setFundsWarning({
+          projected,
+          currency: selectedAccount.currency,
+        });
+        return;
+      }
+    }
+
+    await performSubmit();
+  }
+
+  async function performSubmit() {
+    const value = Number(amount);
     setSubmitting(true);
     setError(null);
     try {
@@ -238,6 +265,20 @@ export default function TransactionForm({
       >
         {submitting ? "Guardando..." : submitLabel}
       </button>
+
+      <ConfirmDialog
+        open={fundsWarning !== null}
+        title="Saldo insuficiente"
+        message={`La cuenta quedará en ${formatMoney(
+          String(fundsWarning?.projected ?? 0),
+          fundsWarning?.currency ?? "EUR",
+        )}. ¿Continuar?`}
+        onCancel={() => setFundsWarning(null)}
+        onConfirm={() => {
+          setFundsWarning(null);
+          performSubmit();
+        }}
+      />
     </form>
   );
 }

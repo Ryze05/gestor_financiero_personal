@@ -3,7 +3,9 @@ import type {
   Category,
   CreateTransactionInput,
   CreateTransferInput,
+  Currency,
   DashboardSummary,
+  ExchangeRate,
   Paginated,
   Transaction,
   TransactionQuery,
@@ -63,6 +65,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   getDashboard: (query: { accountId: string; from?: string; to?: string }) =>
     request<DashboardSummary>(`/dashboard${params(query)}`),
+
+  getRate: (from: Currency, to: Currency) =>
+    request<ExchangeRate>(`/exchange/rate?from=${from}&to=${to}`),
 
   //----------------------------------------------------------------------------
 
