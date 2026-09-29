@@ -251,7 +251,7 @@ describe('TransactionsService', () => {
         skip: 0,
         take: 20,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
       expect(result).toEqual({
         data: [{ id: 't1' }],
@@ -285,7 +285,7 @@ describe('TransactionsService', () => {
         skip: 10,
         take: 10,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
     });
 
@@ -300,7 +300,7 @@ describe('TransactionsService', () => {
         skip: 0,
         take: 20,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
     });
 
@@ -315,7 +315,7 @@ describe('TransactionsService', () => {
         skip: 0,
         take: 20,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
     });
 
@@ -334,7 +334,7 @@ describe('TransactionsService', () => {
         skip: 0,
         take: 20,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
     });
 
@@ -359,7 +359,7 @@ describe('TransactionsService', () => {
         skip: 0,
         take: 20,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
     });
 
@@ -374,7 +374,7 @@ describe('TransactionsService', () => {
         skip: 0,
         take: 20,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
     });
 
@@ -389,7 +389,7 @@ describe('TransactionsService', () => {
         skip: 0,
         take: 20,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
     });
   });
@@ -403,7 +403,7 @@ describe('TransactionsService', () => {
 
       expect(prisma.transaction.findUniqueOrThrow).toHaveBeenCalledWith({
         where: { id: 't1' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       });
       expect(result).toEqual(movimiento);
     });

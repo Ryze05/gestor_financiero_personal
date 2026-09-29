@@ -1,5 +1,7 @@
 import type {
   Account,
+  Activity,
+  ActivityQuery,
   Category,
   CreateTransactionInput,
   CreateTransferInput,
@@ -73,6 +75,9 @@ export const api = {
 
   listTransactions: (query?: TransactionQuery) =>
     request<Paginated<Transaction>>(`/transactions${params(query ?? {})}`),
+
+  listActivities: (query?: ActivityQuery) =>
+    request<Paginated<Activity>>(`/activities${params(query ?? {})}`),
 
   getTransaction: (id: string) => request<Transaction>(`/transactions/${id}`),
 

@@ -212,6 +212,19 @@ La API se servira desde NestJS con prefijo global `/api/v1`.
 - `GET /api/v1/transfers/:id`
 - `DELETE /api/v1/transfers/:id` (borra la transferencia y, en cascada, sus dos movimientos)
 
+### Tickets y Actividades (Rebanada 5, Nivel 2)
+
+Tickets (`Receipt`):
+- `POST /api/v1/receipts` — crea un `Receipt` y sus movimientos agrupados por categoria de forma atomica. Idempotente por `externalId`.
+- `GET /api/v1/receipts` — listado paginado.
+- `GET /api/v1/receipts/:id` — detalle con sus movimientos.
+- `DELETE /api/v1/receipts/:id` — borra el ticket y, en cascada, sus movimientos.
+
+Actividades:
+- `GET /api/v1/activities` — vista del usuario: tickets (agrupados con su comercio, total y lineas dentro) y movimientos sueltos. Paginado por compras. Filtros: `accountId`, `from`, `to`, `categoryId`, `type`, `source`, `search`, `minAmount`, `maxAmount`, `onlyReceipts`.
+
+Cada linea del ticket se convierte en un `Transaction` `EXPENSE` con `receiptId`. El `Receipt` es solo un agrupador: no altera saldos ni dashboard. `GET /transactions` se mantiene para la vista de lineas, analitica y CRUD.
+
 Parametros de `GET /api/v1/transactions` en el MVP:
 
 - `from`: fecha inicial opcional.
@@ -492,6 +505,9 @@ La Rebanada 1 (nucleo backend) esta completa. Sigue la Rebanada 2 (frontend).
 - Entidad `Receipt` y `receiptId` en `Transaction`.
 - Agrupacion de movimientos por categoria.
 - Ajustar los tools del servidor MCP para proponer el desglose.
+
+La Rebanada 5 (Nivel 2) esta completa: entidad `Receipt`, modulo `receipts`, vista `activities`,
+tools MCP `create_receipt` y `list_activities`, agrupacion desplegable en el frontend y tests.
 
 ### Post-MVP: Nivel 3
 

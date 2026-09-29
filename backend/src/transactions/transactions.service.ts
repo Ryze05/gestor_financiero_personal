@@ -53,6 +53,7 @@ export class TransactionsService {
         accountId: dto.accountId,
         categoryId: dto.categoryId,
       },
+      include: { account: true, category: true, receipt: true },
     });
   }
 
@@ -62,6 +63,7 @@ export class TransactionsService {
       to,
       categoryId,
       accountId,
+      receiptId,
       type,
       source,
       minAmount,
@@ -82,6 +84,7 @@ export class TransactionsService {
         : {}),
       ...(categoryId && { categoryId }),
       ...(accountId && { accountId }),
+      ...(receiptId && { receiptId }),
       ...(type && { type }),
       ...(source && { source }),
       ...(minAmount !== undefined || maxAmount !== undefined
@@ -105,7 +108,7 @@ export class TransactionsService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { date: 'desc' },
-        include: { account: true, category: true },
+        include: { account: true, category: true, receipt: true },
       }),
       this.prisma.transaction.count({ where }),
     ]);
@@ -116,7 +119,7 @@ export class TransactionsService {
   findOne(id: string) {
     return this.prisma.transaction.findUniqueOrThrow({
       where: { id },
-      include: { account: true, category: true },
+      include: { account: true, category: true, receipt: true },
     });
   }
 
@@ -168,7 +171,11 @@ export class TransactionsService {
       }
     }
 
-    return this.prisma.transaction.update({ where: { id }, data });
+    return this.prisma.transaction.update({
+      where: { id },
+      data,
+      include: { account: true, category: true, receipt: true },
+    });
   }
 
   async remove(id: string) {

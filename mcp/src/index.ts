@@ -33,18 +33,23 @@ function createServer(): McpServer {
   );
 
   server.registerTool(
-    'list_transactions',
+    'list_activities',
     {
       description:
-        'Lista movimientos con filtros opcionales. Para rangos de fechas usa from/to en formato YYYY-MM-DD. ' +
+        'Lista actividades: tickets (compras agrupadas con comercio y total, y sus líneas dentro) y movimientos sueltos. ' +
+        'Útil para "¿cuáles son mis últimas compras?" o "dime el ticket de Carrefour de la semana pasada". ' +
+        'Filtros opcionales: from/to (YYYY-MM-DD), accountId, categoryId, type (INCOME/EXPENSE), search, minAmount/maxAmount, onlyReceipts. ' +
         'page/limit para paginación (máx 100).',
       inputSchema: z.object({
+        accountId: z.string().uuid(),
         from: z.string().describe('YYYY-MM-DD, inicio del rango').optional(),
         to: z.string().describe('YYYY-MM-DD, fin del rango').optional(),
+        categoryId: z.string().uuid().optional(),
         type: z.enum(['EXPENSE', 'INCOME']).optional(),
-        search: z.string().describe('Texto a buscar en el concepto').optional(),
+        search: z.string().describe('Texto en comercio o concepto de línea').optional(),
         minAmount: z.number().min(0).optional(),
         maxAmount: z.number().min(0).optional(),
+        onlyReceipts: z.boolean().describe('Si true, solo tickets').optional(),
         page: z.number().int().min(1).optional(),
         limit: z.number().int().min(1).max(100).optional(),
       }),
@@ -55,7 +60,7 @@ function createServer(): McpServer {
           .filter(([, v]) => v !== undefined)
           .map(([k, v]) => [k, String(v)]),
       ).toString();
-      const data = await api.get(`/transactions${qs ? `?${qs}` : ''}`);
+      const data = await api.get(`/activities${qs ? `?${qs}` : ''}`);
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
     },
   );
@@ -161,6 +166,38 @@ function createServer(): McpServer {
     },
     async (args) => {
       const data = await api.post('/transfers', args);
+      return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
+    },
+  );
+
+  server.registerTool(
+    'create_receipt',
+    {
+      description:
+        'Registra un ticket completo dividido en movimientos agrupados por categoría (Nivel 2). ' +
+        'REQUIERE confirmación humana ANTES de invocarlo. ' +
+        'externalId debe ser determinista (p.ej. ticket-20260925-001): si ya existe, devuelve el ticket sin duplicar.',
+      inputSchema: z.object({
+        externalId: z.string().min(3).max(160),
+        merchant: z.string().max(150).optional(),
+        date: z.string().describe('YYYY-MM-DD'),
+        total: z.number().positive().describe('Importe total del ticket, máximo 2 decimales'),
+        currency: z.enum(['EUR', 'USD']),
+        accountId: z.string().uuid(),
+        lines: z
+          .array(
+            z.object({
+              amount: z.number().positive().describe('Importe, máximo 2 decimales'),
+              concept: z.string().min(1).max(150),
+              categoryId: z.string().uuid(),
+            }),
+          )
+          .min(1)
+          .describe('Movimientos agrupados por categoría'),
+      }),
+    },
+    async (args) => {
+      const data = await api.post('/receipts', { ...args, source: 'OPENCLAW' });
       return { content: [{ type: 'text', text: JSON.stringify(data, null, 2) }] };
     },
   );

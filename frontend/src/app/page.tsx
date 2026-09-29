@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { HiReceiptRefund } from "react-icons/hi2";
 import { api, ApiError } from "@/lib/api/client";
-import type { Account, DashboardSummary, Transaction } from "@/lib/api/types";
+import type { Account, Activity, DashboardSummary } from "@/lib/api/types";
 import Card from "@/components/Card";
 import CategoryDonut from "@/components/CategoryDonut";
 import BalanceChart from "@/components/BalanceChart";
@@ -41,7 +42,7 @@ export default function Home() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountId, setAccountId] = useState("");
   const [data, setData] = useState<DashboardSummary | null>(null);
-  const [recent, setRecent] = useState<Transaction[]>([]);
+  const [recent, setRecent] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,7 +90,7 @@ export default function Home() {
             accountId,
           }),
           api.listAccounts({ page: 1, limit: 100 }),
-          api.listTransactions({ accountId, page: 1, limit: 5 }),
+          api.listActivities({ accountId, limit: 5 }),
         ]);
         if (!cancelled) {
           setData(res);
@@ -189,29 +190,66 @@ export default function Home() {
                 <p className={styles.hint}>Sin movimientos.</p>
               ) : (
                 <ul className={styles.movementsList}>
-                  {recent.map((tx) => (
-                    <li key={tx.id} className={styles.movement}>
-                      <span className={styles.movementLeft}>
-                        <span className={styles.movementDate}>
-                          {tx.date.slice(0, 10)}
-                        </span>
-                        <span className={styles.movementConcept}>
-                          {tx.concept}
-                        </span>
-                      </span>
-                      <span
-                        className={`${styles.movementAmount} ${
-                          tx.type === "INCOME"
-                            ? styles.valuePositive
-                            : styles.valueNegative
-                        }`}
+                  {recent.map((activity) =>
+                    activity.type === "RECEIPT" ? (
+                      <li
+                        key={activity.receipt.id}
+                        className={styles.movement}
                       >
-                        {tx.type === "INCOME"
-                          ? `+${money(tx.accountAmount, tx.currency)}`
-                          : `-${money(tx.accountAmount, tx.currency)}`}
-                      </span>
-                    </li>
-                  ))}
+                        <span className={styles.movementLeft}>
+                          <span className={styles.movementDate}>
+                            {activity.receipt.date.slice(0, 10)}
+                          </span>
+                          <span className={styles.movementConcept}>
+                            <HiReceiptRefund
+                              className={styles.receiptIcon}
+                            />
+                            {activity.receipt.merchant ?? "Ticket"}
+                          </span>
+                        </span>
+                        <span
+                          className={`${styles.movementAmount} ${styles.valueNegative}`}
+                        >
+                          -
+                          {money(
+                            activity.receipt.total,
+                            activity.receipt.currency,
+                          )}
+                        </span>
+                      </li>
+                    ) : (
+                      <li
+                        key={activity.transaction.id}
+                        className={styles.movement}
+                      >
+                        <span className={styles.movementLeft}>
+                          <span className={styles.movementDate}>
+                            {activity.transaction.date.slice(0, 10)}
+                          </span>
+                          <span className={styles.movementConcept}>
+                            {activity.transaction.concept}
+                          </span>
+                        </span>
+                        <span
+                          className={`${styles.movementAmount} ${
+                            activity.transaction.type === "INCOME"
+                              ? styles.valuePositive
+                              : styles.valueNegative
+                          }`}
+                        >
+                          {activity.transaction.type === "INCOME"
+                            ? `+${money(
+                                activity.transaction.accountAmount,
+                                activity.transaction.currency,
+                              )}`
+                            : `-${money(
+                                activity.transaction.accountAmount,
+                                activity.transaction.currency,
+                              )}`}
+                        </span>
+                      </li>
+                    ),
+                  )}
                 </ul>
               )}
             </div>

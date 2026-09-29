@@ -8,6 +8,7 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   // Limpieza en orden de dependencias (FK onDelete: Restrict)
   await prisma.transfer.deleteMany();
+  await prisma.receipt.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.account.deleteMany();
   await prisma.category.deleteMany();
@@ -110,8 +111,44 @@ async function main() {
     });
   }
 
+  // Ticket de ejemplo (Nivel 2): una compra dividida por categorías
+  const carrefour = await prisma.receipt.create({
+    data: {
+      externalId: 'seed-ticket-carrefour-001',
+      merchant: 'Carrefour',
+      date: new Date('2026-09-21'),
+      total: new Prisma.Decimal('19.00'),
+      currency: 'EUR',
+      accountId: principal.id,
+      source: 'WEB',
+    },
+  });
+
+  const carrefourLines = [
+    { amount: '2.00', concept: 'Pan', category: 'Alimentación' },
+    { amount: '7.00', concept: 'Camiseta', category: 'Ropa' },
+    { amount: '10.00', concept: 'Crema de cara', category: 'Cuidado personal' },
+  ];
+  for (const line of carrefourLines) {
+    await prisma.transaction.create({
+      data: {
+        type: 'EXPENSE',
+        amount: new Prisma.Decimal(line.amount),
+        currency: 'EUR',
+        accountAmount: new Prisma.Decimal(line.amount),
+        exchangeRate: new Prisma.Decimal(1),
+        concept: line.concept,
+        date: new Date('2026-09-21'),
+        source: 'WEB',
+        accountId: principal.id,
+        categoryId: created[line.category],
+        receiptId: carrefour.id,
+      },
+    });
+  }
+
   console.log(
-    `Seed completado: ${await prisma.account.count()} cuentas, ${await prisma.category.count()} categorías, ${await prisma.transaction.count()} movimientos.`,
+    `Seed completado: ${await prisma.account.count()} cuentas, ${await prisma.category.count()} categorías, ${await prisma.transaction.count()} movimientos, ${await prisma.receipt.count()} tickets.`,
   );
 }
 

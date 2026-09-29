@@ -40,6 +40,7 @@ model Account {
   transactions         Transaction[] @relation("AccountTransactions")
   sourceTransfers      Transfer[]    @relation("SourceAccount")
   destinationTransfers Transfer[]    @relation("DestinationAccount")
+  receipts             Receipt[]     @relation("AccountReceipts")
 }
 
 model Category {
@@ -67,6 +68,7 @@ model Transaction {
   source        TransactionSource
   externalId    String?           @unique
   transferId    String?
+  receiptId     String?
   accountId     String
   categoryId    String?
   createdAt     DateTime          @default(now())
@@ -75,11 +77,13 @@ model Transaction {
   account  Account      @relation("AccountTransactions", fields: [accountId], references: [id], onDelete: Restrict)
   category Category?    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   transfer Transfer?   @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  receipt  Receipt?    @relation(fields: [receiptId], references: [id], onDelete: Cascade)
 
   @@index([accountId, date])
   @@index([categoryId, date])
   @@index([date])
   @@index([transferId])
+  @@index([receiptId])
 }
 
 model Transfer {
@@ -103,4 +107,22 @@ model Transfer {
   @@index([sourceAccountId, date])
   @@index([destinationAccountId, date])
   @@index([date])
+}
+
+model Receipt {
+  id         String             @id @default(uuid())
+  externalId String             @unique
+  merchant   String?            @db.VarChar(150)
+  date       DateTime           @db.Date
+  total      Decimal            @db.Decimal(14, 2)
+  currency   Currency
+  accountId  String
+  source     TransactionSource
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+
+  account      Account       @relation("AccountReceipts", fields: [accountId], references: [id], onDelete: Restrict)
+  transactions Transaction[]
+
+  @@index([accountId, date])
 }

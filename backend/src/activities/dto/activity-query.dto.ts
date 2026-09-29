@@ -1,6 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
   IsNumber,
@@ -16,7 +17,12 @@ import {
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { normalizeName } from '../../common/transforms/normalize-name.transform.js';
 
-export class TransactionQueryDto extends PaginationQueryDto {
+export class ActivityQueryDto extends PaginationQueryDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsUUID()
+  accountId?: string;
+
   @ApiPropertyOptional({ example: '2026-09-01' })
   @IsOptional()
   @IsDateString()
@@ -32,31 +38,21 @@ export class TransactionQueryDto extends PaginationQueryDto {
   @IsUUID()
   categoryId?: string;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsUUID()
-  accountId?: string;
-
-  @ApiPropertyOptional({ description: 'Filtra movimientos de un ticket concreto' })
-  @IsOptional()
-  @IsUUID()
-  receiptId?: string;
-
   @ApiPropertyOptional({ enum: TransactionType })
   @IsOptional()
   @IsEnum(TransactionType)
   type?: TransactionType;
 
-  @ApiPropertyOptional({ example: 'mercadona' })
-  @Transform(normalizeName)
-  @IsOptional()
-  @IsString()
-  search?: string;
-
   @ApiPropertyOptional({ enum: TransactionSource })
   @IsOptional()
   @IsEnum(TransactionSource)
   source?: TransactionSource;
+
+  @ApiPropertyOptional({ example: 'carrefour' })
+  @Transform(normalizeName)
+  @IsOptional()
+  @IsString()
+  search?: string;
 
   @ApiPropertyOptional({ example: 10 })
   @IsOptional()
@@ -71,4 +67,9 @@ export class TransactionQueryDto extends PaginationQueryDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   maxAmount?: number;
+
+  @ApiPropertyOptional({ description: 'Solo tickets (para una futura sección)' })
+  @IsOptional()
+  @IsBoolean()
+  onlyReceipts?: boolean;
 }

@@ -1,0 +1,135 @@
+import {
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service.js';
+import { Prisma } from '../generated/prisma/client.js';
+import { CreateReceiptDto } from './dto/create-receipt.dto.js';
+import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
+import { TransactionType } from '../generated/prisma/enums.js';
+
+@Injectable()
+export class ReceiptsService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly exchangeRate: ExchangeRateService,
+  ) {}
+
+  async create(dto: CreateReceiptDto) {
+    const existing = await this.prisma.receipt.findUnique({
+      where: { externalId: dto.externalId },
+      include: { transactions: { include: { account: true, category: true } } },
+    });
+    if (existing) {
+      return { receipt: existing, transactions: existing.transactions };
+    }
+
+    const account = await this.prisma.account.findUnique({
+      where: { id: dto.accountId },
+    });
+    if (!account || account.isArchived) {
+      throw new BadRequestException('Cuenta no valida o archivada.');
+    }
+
+    const receipts = await this.prisma.$transaction(async (p) => {
+      const receipt = await p.receipt.create({
+        data: {
+          externalId: dto.externalId,
+          merchant: dto.merchant,
+          date: new Date(dto.date),
+          total: new Prisma.Decimal(dto.total),
+          currency: dto.currency,
+          accountId: dto.accountId,
+          source: dto.source,
+        },
+      });
+
+      const transactions = [];
+      for (const line of dto.lines) {
+        const category = await p.category.findUnique({
+          where: { id: line.categoryId },
+        });
+        if (!category || category.isArchived) {
+          throw new BadRequestException(
+            `Categoria no valida o archivada: ${line.categoryId}`,
+          );
+        }
+        if (category.type !== 'BOTH' && category.type !== TransactionType.EXPENSE) {
+          throw new BadRequestException(
+            `La categoria '${category.name}' no es compatible con gastos de ticket.`,
+          );
+        }
+
+        const amount = new Prisma.Decimal(line.amount);
+        let accountAmount = amount;
+        let exchangeRate = new Prisma.Decimal(1);
+        if (dto.currency !== account.currency) {
+          const rate = await this.exchangeRate.getRate(
+            dto.currency,
+            account.currency,
+          );
+          accountAmount = this.exchangeRate.convert(amount, rate);
+          exchangeRate = rate;
+        }
+
+        const transaction = await p.transaction.create({
+          data: {
+            type: TransactionType.EXPENSE,
+            amount,
+            currency: dto.currency,
+            accountAmount,
+            exchangeRate,
+            concept: line.concept,
+            date: new Date(dto.date),
+            source: dto.source,
+            accountId: dto.accountId,
+            categoryId: line.categoryId,
+            receiptId: receipt.id,
+          },
+          include: { account: true, category: true },
+        });
+        transactions.push(transaction);
+      }
+
+      return { receipt, transactions };
+    });
+
+    return receipts;
+  }
+
+  async findAll(query: { page?: number; limit?: number }) {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+    const [data, total] = await Promise.all([
+      this.prisma.receipt.findMany({
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { date: 'desc' },
+        include: {
+          transactions: { include: { account: true, category: true } },
+        },
+      }),
+      this.prisma.receipt.count(),
+    ]);
+    return { data, total, page, limit };
+  }
+
+  async findOne(id: string) {
+    return this.prisma.receipt.findUniqueOrThrow({
+      where: { id },
+      include: {
+        transactions: { include: { account: true, category: true } },
+      },
+    });
+  }
+
+  async remove(id: string) {
+    const receipt = await this.prisma.receipt.findUniqueOrThrow({
+      where: { id },
+    });
+    return this.prisma.$transaction(async (p) => {
+      await p.transaction.deleteMany({ where: { receiptId: receipt.id } });
+      return p.receipt.delete({ where: { id } });
+    });
+  }
+}

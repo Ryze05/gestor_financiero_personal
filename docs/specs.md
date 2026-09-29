@@ -53,7 +53,7 @@ El trabajo se organiza en rebanadas verticales: cada una entrega algo que funcio
 2. **Rebanada 2. Frontend funcional (Nivel 1).** Dashboard, listado, alta manual, edicion y filtros.
 3. **Rebanada 3. OpenClaw (Nivel 1).** Servidor MCP en `mcp/` que expone la REST API como tools: consultar gastos, registrar movimientos y transferencias con confirmacion humana.
 4. **Rebanada 4. Extras financieros (fase final).** Conversion EUR/USD, edicion de transferencias, filtros avanzados por `source` y `accountAmount`, nombres de cuenta y categoria en la respuesta de movimientos, y estados de carga (skeletons) en los listados para evitar parpadeos al restaurar la preferencia de cuenta. Esta rebanada esta implementada en backend y frontend. Tambien incluye el endpoint `GET /exchange/rate`, el aviso de saldo negativo (permite negativos y avisa en el frontend) y el rediseño del dashboard (hero con saldo all-time y `openingBalance`).
-5. **Rebanada 5. Nivel 2 (si el tiempo lo permite).** Entidad `Receipt` para agrupar por categoria.
+5. **Rebanada 5. Nivel 2.** Entidad `Receipt` para agrupar movimientos por categoria. Implementado en backend (modulo `receipts` con `POST/GET/DELETE /api/v1/receipts` de alta atomica e idempotente, y `GET /api/v1/activities` como vista de compras), en el tool MCP `create_receipt` + `list_activities`, y en el frontend (agrupacion desplegable de movimientos de un mismo ticket en el listado y en el hero del dashboard).
 6. **Post-MVP. Nivel 3.** Lineas de producto.
 
 Objetivo: tener el Nivel 2 como minimo antes del miercoles y el Nivel 3 si es posible.
