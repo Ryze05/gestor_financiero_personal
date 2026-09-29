@@ -405,9 +405,7 @@ export default function TransactionsPage() {
                     {transaction.date.slice(0, 10)} ·{" "}
                     {transaction.account?.name ?? "—"}{" "}
                     ·{" "}
-                    {transaction.transferId
-                      ? "Transferencia"
-                      : transaction.category?.name ?? "Sin categoría"}
+                    {transaction.category?.name ?? "Sin categoría"}
                   </span>
                 </div>
                 <div className={styles.transactionActions}>

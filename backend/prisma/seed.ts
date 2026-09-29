@@ -16,14 +16,14 @@ async function main() {
   const principal = await prisma.account.create({
     data: {
       name: 'Cuenta principal',
-      initialBalance: new Prisma.Decimal('1000'),
+      initialBalance: new Prisma.Decimal('0'),
       currency: 'EUR',
     },
   });
   const revolut = await prisma.account.create({
     data: {
       name: 'Revolut',
-      initialBalance: new Prisma.Decimal('500'),
+      initialBalance: new Prisma.Decimal('0'),
       currency: 'USD',
     },
   });
@@ -53,6 +53,7 @@ async function main() {
     { name: 'Inversiones', type: 'INCOME', color: '#16a34a' },
     { name: 'Ventas', type: 'INCOME', color: '#84cc16' },
     { name: 'Otros ingresos', type: 'INCOME', color: '#a3e635' },
+    { name: 'Transferencias', type: 'BOTH', color: '#7c3aed' },
   ];
 
   const created: Record<string, string> = {};
@@ -67,38 +68,43 @@ async function main() {
     created[c.name] = c.id;
   }
 
-  // Movimientos de ejemplo (septiembre 2026)
+  // Movimientos de ejemplo (agosto y septiembre 2026)
   const txs = [
-    { type: 'EXPENSE', amount: '56.30', currency: 'EUR', concept: 'Supermercado', date: '2026-09-02', category: 'Alimentación', account: principal },
-    { type: 'EXPENSE', amount: '24.50', currency: 'EUR', concept: 'Cena con amigos', date: '2026-09-05', category: 'Restaurantes y bares', account: principal },
-    { type: 'EXPENSE', amount: '45.00', currency: 'EUR', concept: 'Repostaje coche', date: '2026-09-08', category: 'Combustible', account: principal },
-    { type: 'INCOME', amount: '1500.00', currency: 'EUR', concept: 'Nómina septiembre', date: '2026-09-01', category: 'Salario', account: principal },
-    { type: 'EXPENSE', amount: '12.99', currency: 'EUR', concept: 'Suscripción streaming', date: '2026-09-10', category: 'Suscripciones', account: principal },
-    { type: 'EXPENSE', amount: '89.99', currency: 'USD', concept: 'Compra online', date: '2026-09-12', category: 'Tecnología', account: revolut },
-    { type: 'EXPENSE', amount: '18.40', currency: 'EUR', concept: 'Metro y bus', date: '2026-09-15', category: 'Transporte', account: principal },
+    // Cuenta principal (EUR)
+    { type: 'INCOME', amount: '1450.00', concept: 'Nómina agosto', date: '2026-08-01', category: 'Salario', account: principal },
+    { type: 'INCOME', amount: '1500.00', concept: 'Nómina septiembre', date: '2026-09-01', category: 'Salario', account: principal },
+    { type: 'INCOME', amount: '250.00', concept: 'Proyecto freelance', date: '2026-09-15', category: 'Freelance', account: principal },
+    { type: 'EXPENSE', amount: '650.00', concept: 'Alquiler', date: '2026-09-01', category: 'Alquiler / Hipoteca', account: principal },
+    { type: 'EXPENSE', amount: '56.30', concept: 'Supermercado', date: '2026-09-02', category: 'Alimentación', account: principal },
+    { type: 'EXPENSE', amount: '62.10', concept: 'Supermercado', date: '2026-09-06', category: 'Alimentación', account: principal },
+    { type: 'EXPENSE', amount: '24.50', concept: 'Cena con amigos', date: '2026-09-05', category: 'Restaurantes y bares', account: principal },
+    { type: 'EXPENSE', amount: '45.00', concept: 'Repostaje coche', date: '2026-09-08', category: 'Combustible', account: principal },
+    { type: 'EXPENSE', amount: '12.99', concept: 'Suscripción streaming', date: '2026-09-10', category: 'Suscripciones', account: principal },
+    { type: 'EXPENSE', amount: '9.99', concept: 'Suscripción música', date: '2026-09-12', category: 'Suscripciones', account: principal },
+    { type: 'EXPENSE', amount: '18.40', concept: 'Metro y bus', date: '2026-09-15', category: 'Transporte', account: principal },
+    { type: 'EXPENSE', amount: '48.75', concept: 'Cena restaurante', date: '2026-09-18', category: 'Restaurantes y bares', account: principal },
+    { type: 'EXPENSE', amount: '35.00', concept: 'Ocio / cine', date: '2026-09-20', category: 'Ocio', account: principal },
+    { type: 'EXPENSE', amount: '89.90', concept: 'Luz y agua', date: '2026-09-22', category: 'Suministros', account: principal },
+    // Revolut (USD)
+    { type: 'INCOME', amount: '80.00', concept: 'Ventas online', date: '2026-09-05', category: 'Ventas', account: revolut },
+    { type: 'EXPENSE', amount: '89.99', concept: 'Compra online', date: '2026-09-12', category: 'Tecnología', account: revolut },
+    { type: 'EXPENSE', amount: '15.99', concept: 'Suscripción USD', date: '2026-09-14', category: 'Suscripciones', account: revolut },
   ] as const;
 
   for (const t of txs) {
-    const currency = t.currency;
-    const account = t.account;
-    const accountCurrency = account.currency;
-    let accountAmount = new Prisma.Decimal(t.amount);
-    let exchangeRate = new Prisma.Decimal(1);
-    if (currency !== accountCurrency) {
-      exchangeRate = new Prisma.Decimal('1.05');
-      accountAmount = new Prisma.Decimal(t.amount).mul(exchangeRate);
-    }
+    const currency = t.account.currency;
+    const accountAmount = new Prisma.Decimal(t.amount);
     await prisma.transaction.create({
       data: {
         type: t.type,
         amount: new Prisma.Decimal(t.amount),
         currency,
         accountAmount,
-        exchangeRate,
+        exchangeRate: new Prisma.Decimal(1),
         concept: t.concept,
         date: new Date(t.date),
         source: 'WEB',
-        accountId: account.id,
+        accountId: t.account.id,
         categoryId: created[t.category],
       },
     });

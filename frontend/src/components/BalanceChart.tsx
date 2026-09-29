@@ -23,16 +23,19 @@ type TimelineItem = {
 export default function BalanceChart({
   data,
   currency,
+  openingBalance,
   formatMoney,
 }: {
   data: TimelineItem[];
   currency: Currency;
+  openingBalance: string;
   formatMoney: (amount: string, currency: Currency) => string;
 }) {
   const chartData = data.reduce<
     Array<{ date: string; balance: number }>
   >((acc, item) => {
-    const previous = acc.length > 0 ? acc[acc.length - 1].balance : 0;
+    const previous =
+      acc.length > 0 ? acc[acc.length - 1].balance : Number(openingBalance);
     const balance =
       previous +
       Number(item.income) +

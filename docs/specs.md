@@ -346,7 +346,7 @@ Los nombres de campos, codigos de error y parametros se concretan en `docs/archi
 - Se puede registrar un gasto a partir del flujo supervisado de OpenClaw.
 - La API permite listar gastos filtrando por periodo y categoria.
 - El dashboard muestra totales coherentes con los movimientos guardados.
-- Las transferencias no aparecen como ingresos ni gastos en el dashboard.
+- Las transferencias cuentan como gasto en la cuenta origen y como ingreso en la cuenta destino del dashboard.
 - Las transferencias entre monedas aplican una tasa y actualizan correctamente los saldos de ambas cuentas.
 - Los gastos se agrupan correctamente por categoria.
 - OpenClaw puede consultar los ultimos gastos y el resumen de un periodo.

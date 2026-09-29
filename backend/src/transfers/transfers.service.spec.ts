@@ -10,6 +10,7 @@ describe('TransfersService', () => {
 
   const prisma = {
     account: { findUnique: vi.fn() },
+    category: { findUnique: vi.fn() },
     transfer: {
       findMany: vi.fn(),
       count: vi.fn(),
