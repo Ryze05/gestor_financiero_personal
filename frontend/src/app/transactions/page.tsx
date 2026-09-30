@@ -14,6 +14,7 @@ import DatePicker from "@/components/DatePicker";
 import ActionsMenu from "@/components/ActionsMenu";
 import Modal from "@/components/Dialog";
 import TransactionForm from "@/components/TransactionForm";
+import ReceiptForm from "@/components/ReceiptForm";
 import SelectField from "@/components/Select";
 import SkeletonList from "@/components/SkeletonList";
 import SkeletonSelect from "@/components/SkeletonSelect";
@@ -26,6 +27,7 @@ import type {
   Activity,
   ActivityQuery,
   Category,
+  Receipt,
   Transaction,
   TransactionSource,
   TransactionType,
@@ -55,6 +57,12 @@ export default function TransactionsPage() {
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [deletingError, setDeletingError] = useState<string | null>(null);
   const [editing, setEditing] = useState<Transaction | null>(null);
+  const [editingReceipt, setEditingReceipt] = useState<Receipt | null>(null);
+  const [deletingReceipt, setDeletingReceipt] = useState<Receipt | null>(null);
+  const [deletingReceiptBusy, setDeletingReceiptBusy] = useState(false);
+  const [deletingReceiptError, setDeletingReceiptError] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -208,10 +216,16 @@ export default function TransactionsPage() {
           </p>
         </div>
 
-        <Link href="/transactions/new" className={styles.primaryButton}>
-          <HiPlus />
-          Nuevo movimiento
-        </Link>
+        <div className={styles.headerButtons}>
+          <Link href="/transactions/new" className={styles.primaryButton}>
+            <HiPlus />
+            Nuevo movimiento
+          </Link>
+          <Link href="/tickets/new" className={styles.primaryButton}>
+            <HiPlus />
+            Nuevo ticket
+          </Link>
+        </div>
       </header>
 
       <Card>
@@ -405,6 +419,14 @@ export default function TransactionsPage() {
                   key={activity.receipt.id}
                   receipt={activity.receipt}
                   lines={activity.transactions}
+                  onEdit={(receipt) => setEditingReceipt(receipt)}
+                  onDelete={(id) => {
+                    const found = activities.find(
+                      (a) => a.type === "RECEIPT" && a.receipt.id === id,
+                    );
+                    if (found && found.type === "RECEIPT")
+                      setDeletingReceipt(found.receipt);
+                  }}
                 />
               ) : (
                 <article
@@ -430,19 +452,19 @@ export default function TransactionsPage() {
                     >
                       {activity.transaction.type === "EXPENSE" ? "-" : "+"}
                       {formatMoney(
-                        activity.transaction.amount,
-                        activity.transaction.currency,
+                        activity.transaction.accountAmount,
+                        activity.transaction.account?.currency ??
+                          activity.transaction.currency,
                       )}
                     </span>
                     {activity.transaction.exchangeRate !== "1" && (
                       <span className={styles.converted}>
-                        →{" "}
+                        (
                         {formatMoney(
-                          activity.transaction.accountAmount,
-                          activity.transaction.account?.currency ??
-                            activity.transaction.currency,
+                          activity.transaction.amount,
+                          activity.transaction.currency,
                         )}{" "}
-                        @ {activity.transaction.exchangeRate}
+                        @ {activity.transaction.exchangeRate})
                       </span>
                     )}
                     <ActionsMenu
@@ -508,6 +530,49 @@ export default function TransactionsPage() {
       </Modal>
 
       <Modal
+        title="Editar ticket"
+        open={editingReceipt !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingReceipt(null);
+        }}
+      >
+        {editingReceipt && (
+          <ReceiptForm
+            accounts={accounts}
+            categories={categories.filter((category) => !category.isArchived)}
+            submitLabel="Guardar cambios"
+            initial={{
+              merchant: editingReceipt.merchant ?? "",
+              date: new Date(editingReceipt.date),
+              accountId: editingReceipt.accountId,
+              currency: editingReceipt.currency,
+              total: editingReceipt.total,
+              autoTotal: false,
+              lines: (editingReceipt.transactions ?? []).map((line) => ({
+                amount: Number(line.amount),
+                concept: line.concept,
+                categoryId: line.categoryId ?? "",
+              })),
+            }}
+            onSubmit={async (input) => {
+              await api.updateReceipt(editingReceipt.id, {
+                merchant: input.merchant,
+                date: input.date,
+                total: input.total,
+                currency: input.currency,
+                accountId: input.accountId,
+                lines: input.lines,
+              });
+              setEditingReceipt(null);
+              const result = await api.listActivities(buildQuery());
+              setActivities(result.data);
+              setTotal(result.total);
+            }}
+          />
+        )}
+      </Modal>
+
+      <Modal
         title="Eliminar movimiento"
         open={deleting !== null}
         onOpenChange={(open) => {
@@ -556,6 +621,60 @@ export default function TransactionsPage() {
             }}
           >
             {deletingBusy ? "Eliminando..." : "Eliminar"}
+          </button>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Eliminar ticket"
+        open={deletingReceipt !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeletingReceipt(null);
+            setDeletingReceiptError(null);
+          }
+        }}
+      >
+        <p className={styles.confirmText}>
+          ¿Seguro que quieres eliminar el ticket “
+          {deletingReceipt?.merchant}”? Se borrarán también sus movimientos. No
+          se puede deshacer.
+        </p>
+        {deletingReceiptError && (
+          <p className={styles.error}>{deletingReceiptError}</p>
+        )}
+        <div className={styles.confirmActions}>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => setDeletingReceipt(null)}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className={styles.dangerButton}
+            aria-disabled={deletingReceiptBusy}
+            onClick={async () => {
+              if (!deletingReceipt || deletingReceiptBusy) return;
+              setDeletingReceiptBusy(true);
+              setDeletingReceiptError(null);
+              try {
+                await api.deleteReceipt(deletingReceipt.id);
+                setDeletingReceipt(null);
+                const result = await api.listActivities(buildQuery());
+                setActivities(result.data);
+                setTotal(result.total);
+              } catch (err) {
+                setDeletingReceiptError(
+                  err instanceof ApiError ? err.message : "No se pudo eliminar.",
+                );
+              } finally {
+                setDeletingReceiptBusy(false);
+              }
+            }}
+          >
+            {deletingReceiptBusy ? "Eliminando..." : "Eliminar"}
           </button>
         </div>
       </Modal>

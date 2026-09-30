@@ -5,6 +5,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Query,
 } from '@nestjs/common';
@@ -15,6 +16,7 @@ import {
 } from '@nestjs/swagger';
 import { ReceiptsService } from './receipts.service.js';
 import { CreateReceiptDto } from './dto/create-receipt.dto.js';
+import { UpdateReceiptDto } from './dto/update-receipt.dto.js';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 
 @ApiTags('receipts')
@@ -39,6 +41,15 @@ export class ReceiptsController {
   @ApiOperation({ summary: 'Obtener un ticket con sus movimientos' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.receiptsService.findOne(id);
+  }
+
+  @Patch(':id')
+  @ApiOperation({ summary: 'Actualizar un ticket (metadatos y/o sus movimientos)' })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateReceiptDto,
+  ) {
+    return this.receiptsService.update(id, dto);
   }
 
   @Delete(':id')

@@ -112,6 +112,7 @@ export interface Receipt {
   createdAt: string;
   updatedAt: string;
   account?: AccountBase;
+  transactions?: Transaction[];
 }
 
 export type Activity =
@@ -196,3 +197,24 @@ export interface DashboardSummary {
   byCategory: DashboardByCategory[];
   timeline: DashboardTimelinePoint[];
 }
+
+export interface ReceiptLineInput {
+  amount: number;
+  concept: string;
+  categoryId: string;
+}
+
+export interface CreateReceiptInput {
+  externalId: string;
+  merchant?: string;
+  date: string;
+  total: number;
+  currency: Currency;
+  accountId: string;
+  lines: ReceiptLineInput[];
+  source?: TransactionSource;
+}
+
+export type UpdateReceiptInput = Partial<
+  Omit<CreateReceiptInput, "externalId" | "source">
+>;

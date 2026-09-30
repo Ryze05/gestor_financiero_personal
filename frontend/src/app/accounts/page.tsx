@@ -10,6 +10,7 @@ import SkeletonList from "@/components/SkeletonList";
 import StatusFilter, {
   type StatusFilterValue,
 } from "@/components/StatusFilter";
+import Spinner from "@/components/Spinner";
 import { api, ApiError } from "@/lib/api/client";
 import { formatMoney } from "@/lib/utils/money";
 import type { Account, Currency } from "@/lib/api/types";
@@ -186,6 +187,7 @@ export default function AccountsPage() {
               className={styles.primaryButton}
               aria-disabled={submitting}
             >
+              {submitting && <Spinner />}
               {submitting ? "Creando..." : "Crear cuenta"}
             </button>
           </form>

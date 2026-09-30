@@ -1,0 +1,22 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.back:hover {
+  color: var(--foreground);
+}
+
+.error {
+  color: var(--negative);
+}

@@ -14,9 +14,9 @@ import {
 describe('ReceiptsService', () => {
   let service: ReceiptsService;
   const tx = {
-    receipt: { create: vi.fn() },
+    receipt: { create: vi.fn(), update: vi.fn() },
     category: { findUnique: vi.fn() },
-    transaction: { create: vi.fn(), deleteMany: vi.fn() },
+    transaction: { create: vi.fn(), deleteMany: vi.fn(), update: vi.fn() },
   };
   const prisma = {
     receipt: {
@@ -214,6 +214,130 @@ describe('ReceiptsService', () => {
         },
       });
       expect(result).toEqual(receipt);
+    });
+  });
+
+  describe('update', () => {
+    const currentReceipt = {
+      id: 'r1',
+      accountId: 'acc1',
+      currency: Currency.EUR,
+      source: TransactionSource.WEB,
+      date: new Date('2026-09-25'),
+      transactions: [
+        { id: 't1', amount: new Prisma.Decimal(10), currency: Currency.EUR },
+      ],
+    };
+
+    it('actualiza los metadatos sin tocar las líneas', async () => {
+      prisma.receipt.findUniqueOrThrow
+        .mockResolvedValueOnce(currentReceipt)
+        .mockResolvedValueOnce({ id: 'r1' });
+      prisma.account.findUnique.mockResolvedValue({
+        id: 'acc1',
+        currency: Currency.EUR,
+        isArchived: false,
+      });
+      tx.receipt.update.mockResolvedValue({ id: 'r1' });
+
+      await service.update('r1', { merchant: 'Alcampo', total: 20 });
+
+      expect(tx.receipt.update).toHaveBeenCalledWith({
+        where: { id: 'r1' },
+        data: { merchant: 'Alcampo', total: new Prisma.Decimal(20) },
+      });
+      expect(tx.transaction.deleteMany).not.toHaveBeenCalled();
+      expect(tx.transaction.update).not.toHaveBeenCalled();
+    });
+
+    it('reemplaza las líneas cuando se envían', async () => {
+      prisma.receipt.findUniqueOrThrow
+        .mockResolvedValueOnce(currentReceipt)
+        .mockResolvedValueOnce({ id: 'r1', transactions: [] });
+      prisma.account.findUnique.mockResolvedValue({
+        id: 'acc1',
+        currency: Currency.EUR,
+        isArchived: false,
+      });
+      tx.receipt.update.mockResolvedValue({ id: 'r1' });
+      tx.category.findUnique.mockResolvedValue({
+        id: 'catAli',
+        type: CategoryType.EXPENSE,
+        isArchived: false,
+        name: 'Alimentación',
+      });
+      tx.transaction.create.mockResolvedValue({ id: 'tNew' });
+
+      await service.update('r1', {
+        lines: [{ amount: 2, concept: 'Pan', categoryId: 'catAli' }],
+      });
+
+      expect(tx.transaction.deleteMany).toHaveBeenCalledWith({
+        where: { receiptId: 'r1' },
+      });
+      expect(tx.transaction.create).toHaveBeenCalledTimes(1);
+      const args = tx.transaction.create.mock.calls[0][0];
+      expect(args.data.receiptId).toBe('r1');
+      expect(args.data.source).toBe(TransactionSource.WEB);
+    });
+
+    it('propaga el cambio de cuenta/moneda a las líneas existentes', async () => {
+      prisma.receipt.findUniqueOrThrow
+        .mockResolvedValueOnce(currentReceipt)
+        .mockResolvedValueOnce({ id: 'r1', transactions: [] });
+      prisma.account.findUnique.mockResolvedValue({
+        id: 'acc2',
+        currency: Currency.USD,
+        isArchived: false,
+      });
+      tx.receipt.update.mockResolvedValue({ id: 'r1' });
+      tx.transaction.update.mockResolvedValue({ id: 't1' });
+      exchangeRate.getRate.mockResolvedValue(new Prisma.Decimal('1.1'));
+
+      await service.update('r1', { accountId: 'acc2' });
+
+      expect(exchangeRate.getRate).toHaveBeenCalledWith(
+        Currency.EUR,
+        Currency.USD,
+      );
+      expect(tx.transaction.update).toHaveBeenCalledWith({
+        where: { id: 't1' },
+        data: expect.objectContaining({ accountId: 'acc2', currency: Currency.EUR }),
+      });
+      expect(tx.transaction.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('rechaza una cuenta no válida o archivada', async () => {
+      prisma.receipt.findUniqueOrThrow.mockResolvedValueOnce(currentReceipt);
+      prisma.account.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.update('r1', { accountId: 'acc2' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rechaza una línea con categoría no válida al reemplazar líneas', async () => {
+      prisma.receipt.findUniqueOrThrow
+        .mockResolvedValueOnce(currentReceipt)
+        .mockResolvedValueOnce({ id: 'r1', transactions: [] });
+      prisma.account.findUnique.mockResolvedValue({
+        id: 'acc1',
+        currency: Currency.EUR,
+        isArchived: false,
+      });
+      tx.receipt.update.mockResolvedValue({ id: 'r1' });
+      tx.category.findUnique.mockResolvedValue({
+        id: 'catX',
+        type: CategoryType.INCOME,
+        isArchived: false,
+        name: 'Salario',
+      });
+
+      await expect(
+        service.update('r1', {
+          lines: [{ amount: 5, concept: 'X', categoryId: 'catX' }],
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

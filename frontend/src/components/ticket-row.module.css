@@ -9,12 +9,22 @@
   gap: 16px;
   width: 100%;
   padding: 14px 0;
+}
+
+.headerMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0;
   border: 0;
   background: transparent;
   color: var(--foreground);
   font-family: var(--font-sans);
-  cursor: pointer;
+  font-size: inherit;
   text-align: left;
+  cursor: pointer;
 }
 
 .headerInfo {
@@ -126,6 +136,11 @@
 @media (max-width: 767px) {
   .header {
     align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .headerMain {
+    width: 100%;
   }
 
   .headerInfo,

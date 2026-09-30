@@ -36,6 +36,12 @@
   gap: 8px;
 }
 
+.headerButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .primaryButton,
 .secondaryButton,
 .filterButton {
@@ -391,6 +397,11 @@
 
   .filterActions {
     width: 100%;
+  }
+
+  .headerButtons {
+    width: 100%;
+    flex-direction: column;
   }
 
   .filters {

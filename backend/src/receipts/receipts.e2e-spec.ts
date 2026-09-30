@@ -76,6 +76,9 @@ describe('Receipts (e2e)', () => {
   });
 
   afterAll(async () => {
+    await prisma.transaction.deleteMany({
+      where: { receipt: { externalId: { startsWith: 'e2e-' } } },
+    });
     await prisma.receipt.deleteMany({
       where: { externalId: { startsWith: 'e2e-' } },
     });
@@ -170,6 +173,67 @@ describe('Receipts (e2e)', () => {
   it('GET id inexistente → 404', async () => {
     await request(app.getHttpServer())
       .get(`/api/v1/receipts/${MISSING_ID}`)
+      .expect(404);
+  });
+
+  it('PATCH actualiza metadatos y conserva las líneas', async () => {
+    const receipt = await createReceipt();
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/receipts/${receipt.receipt.id}`)
+      .send({ merchant: 'e2e-renombrado', total: 21 })
+      .expect(200);
+    expect(res.body.merchant).toBe('e2e-renombrado');
+    expect(res.body.total).toBe('21');
+    expect(res.body.transactions).toHaveLength(3);
+  });
+
+  it('PATCH reemplaza las líneas', async () => {
+    const receipt = await createReceipt();
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/receipts/${receipt.receipt.id}`)
+      .send({
+        lines: [{ amount: 4, concept: 'e2e-Solo', categoryId: expenseCategoryId }],
+      })
+      .expect(200);
+    expect(res.body.transactions).toHaveLength(1);
+    expect(res.body.transactions[0].concept).toBe('e2e-Solo');
+  });
+
+  it('PATCH cambia de cuenta y propaga a las líneas existentes', async () => {
+    const receipt = await createReceipt();
+    const other = await post('/api/v1/accounts', {
+      name: uniqueName(),
+      currency: 'USD',
+    }).expect(201);
+    const res = await request(app.getHttpServer())
+      .patch(`/api/v1/receipts/${receipt.receipt.id}`)
+      .send({ accountId: other.body.id })
+      .expect(200);
+    expect(res.body.accountId).toBe(other.body.id);
+    expect(res.body.transactions).toHaveLength(3);
+    expect(
+      res.body.transactions.every((t: { accountId: string }) => t.accountId === other.body.id),
+    ).toBe(true);
+  });
+
+  it('PATCH con línea de categoría incompatible → 400', async () => {
+    const receipt = await createReceipt();
+    const income = await post('/api/v1/categories', {
+      name: uniqueName(),
+      type: 'INCOME',
+    }).expect(201);
+    await request(app.getHttpServer())
+      .patch(`/api/v1/receipts/${receipt.receipt.id}`)
+      .send({
+        lines: [{ amount: 4, concept: 'e2e-X', categoryId: income.body.id }],
+      })
+      .expect(400);
+  });
+
+  it('PATCH id inexistente → 404', async () => {
+    await request(app.getHttpServer())
+      .patch(`/api/v1/receipts/${MISSING_ID}`)
+      .send({ merchant: 'x' })
       .expect(404);
   });
 

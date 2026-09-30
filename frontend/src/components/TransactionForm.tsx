@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import DatePicker from "@/components/DatePicker";
 import SelectField from "@/components/Select";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import Spinner from "@/components/Spinner";
 import { api, ApiError } from "@/lib/api/client";
 import { toApiDate } from "@/lib/utils/date";
 import { formatMoney } from "@/lib/utils/money";
@@ -88,14 +89,23 @@ export default function TransactionForm({
     if (!value || value <= 0) return setError("Introduce un importe válido.");
     if (!concept.trim()) return setError("Introduce un concepto.");
 
+    setSubmitting(true);
+    setError(null);
+
     if (type === "EXPENSE" && selectedAccount) {
       let accountAmount = value;
       if (currency !== selectedAccount.currency) {
-        const rate = await api.getRate(currency, selectedAccount.currency);
-        accountAmount = Number(rate.rate) * value;
+        try {
+          const rate = await api.getRate(currency, selectedAccount.currency);
+          accountAmount = Number(rate.rate) * value;
+        } catch {
+          await performSubmit();
+          return;
+        }
       }
       const projected = Number(selectedAccount.currentBalance) - accountAmount;
       if (projected < 0) {
+        setSubmitting(false);
         setFundsWarning({
           projected,
           currency: selectedAccount.currency,
@@ -263,6 +273,7 @@ export default function TransactionForm({
         className={styles.primaryButton}
         aria-disabled={submitting}
       >
+        {submitting && <Spinner />}
         {submitting ? "Guardando..." : submitLabel}
       </button>
 

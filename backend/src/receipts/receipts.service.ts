@@ -5,6 +5,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { CreateReceiptDto } from './dto/create-receipt.dto.js';
+import { UpdateReceiptDto } from './dto/update-receipt.dto.js';
 import { ExchangeRateService } from '../exchange-rate/exchange-rate.service.js';
 import { TransactionType } from '../generated/prisma/enums.js';
 
@@ -95,6 +96,113 @@ export class ReceiptsService {
     });
 
     return receipts;
+  }
+
+  async update(id: string, dto: UpdateReceiptDto) {
+    const current = await this.prisma.receipt.findUniqueOrThrow({
+      where: { id },
+      include: { transactions: true },
+    });
+
+    const accountId = dto.accountId ?? current.accountId;
+    const currency = dto.currency ?? current.currency;
+    const account = await this.prisma.account.findUnique({
+      where: { id: accountId },
+    });
+    if (!account || account.isArchived) {
+      throw new BadRequestException('Cuenta no valida o archivada.');
+    }
+
+    await this.prisma.$transaction(async (p) => {
+      const data: Prisma.ReceiptUncheckedUpdateInput = {};
+      if (dto.merchant !== undefined) data.merchant = dto.merchant;
+      if (dto.date !== undefined) data.date = new Date(dto.date);
+      if (dto.total !== undefined) data.total = new Prisma.Decimal(dto.total);
+      if (dto.currency !== undefined) data.currency = dto.currency;
+      if (dto.accountId !== undefined) data.accountId = dto.accountId;
+      await p.receipt.update({ where: { id }, data });
+
+      if (dto.lines) {
+        await p.transaction.deleteMany({ where: { receiptId: id } });
+        const date = dto.date ? new Date(dto.date) : current.date;
+        for (const line of dto.lines) {
+          const category = await p.category.findUnique({
+            where: { id: line.categoryId },
+          });
+          if (!category || category.isArchived) {
+            throw new BadRequestException(
+              `Categoria no valida o archivada: ${line.categoryId}`,
+            );
+          }
+          if (
+            category.type !== 'BOTH' &&
+            category.type !== TransactionType.EXPENSE
+          ) {
+            throw new BadRequestException(
+              `La categoria '${category.name}' no es compatible con gastos de ticket.`,
+            );
+          }
+          const amount = new Prisma.Decimal(line.amount);
+          let accountAmount = amount;
+          let exchangeRate = new Prisma.Decimal(1);
+          if (currency !== account.currency) {
+            const rate = await this.exchangeRate.getRate(
+              currency,
+              account.currency,
+            );
+            accountAmount = this.exchangeRate.convert(amount, rate);
+            exchangeRate = rate;
+          }
+          await p.transaction.create({
+            data: {
+              type: TransactionType.EXPENSE,
+              amount,
+              currency,
+              accountAmount,
+              exchangeRate,
+              concept: line.concept,
+              date,
+              source: current.source,
+              accountId,
+              categoryId: line.categoryId,
+              receiptId: id,
+            },
+          });
+        }
+      } else if (
+        dto.accountId !== undefined ||
+        dto.currency !== undefined
+      ) {
+        for (const tx of current.transactions) {
+          let accountAmount = tx.amount;
+          let exchangeRate = new Prisma.Decimal(1);
+          if (currency !== account.currency) {
+            const rate = await this.exchangeRate.getRate(
+              currency,
+              account.currency,
+            );
+            accountAmount = this.exchangeRate.convert(tx.amount, rate);
+            exchangeRate = rate;
+          }
+          await p.transaction.update({
+            where: { id: tx.id },
+            data: {
+              accountId,
+              currency,
+              accountAmount,
+              exchangeRate,
+            },
+          });
+        }
+      }
+    });
+
+    return this.prisma.receipt.findUniqueOrThrow({
+      where: { id },
+      include: {
+        transactions: { include: { account: true, category: true } },
+      },
+    });
   }
 
   async findAll(query: { page?: number; limit?: number }) {

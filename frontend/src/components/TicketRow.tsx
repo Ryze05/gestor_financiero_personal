@@ -4,8 +4,10 @@ import { useState } from "react";
 import {
   HiChevronDown,
   HiChevronUp,
-  HiShoppingCart,
+  HiPencil,
+  HiTrash,
 } from "react-icons/hi2";
+import ActionsMenu from "@/components/ActionsMenu";
 import { formatMoney } from "@/lib/utils/money";
 import type { Receipt, Transaction } from "@/lib/api/types";
 import styles from "./ticket-row.module.css";
@@ -13,37 +15,78 @@ import styles from "./ticket-row.module.css";
 interface TicketRowProps {
   receipt: Receipt;
   lines: Transaction[];
+  onDelete?: (id: string) => void;
+  onEdit?: (receipt: Receipt) => void;
 }
 
-export default function TicketRow({ receipt, lines }: TicketRowProps) {
+export default function TicketRow({
+  receipt,
+  lines,
+  onDelete,
+  onEdit,
+}: TicketRowProps) {
   const [open, setOpen] = useState(false);
 
   return (
     <div className={styles.wrapper}>
-      <button
-        type="button"
-        className={styles.header}
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open}
-      >
-        <div className={styles.headerInfo}>
-          <HiShoppingCart className={styles.ticketIcon} />
-          <div>
-            <strong>{receipt.merchant ?? "Ticket"}</strong>
-            <span>
-              {receipt.date.slice(0, 10)} · {receipt.account?.name ?? "—"}{" "}
-              · {lines.length}{" "}
-              {lines.length === 1 ? "item" : "items"}
-            </span>
+      <div className={styles.header}>
+        <button
+          type="button"
+          className={styles.headerMain}
+          onClick={() => setOpen((current) => !current)}
+          aria-expanded={open}
+        >
+          {open ? <HiChevronUp /> : <HiChevronDown />}
+          <div className={styles.headerInfo}>
+            <div>
+              <strong>{receipt.merchant ?? "Ticket"}</strong>
+              <span>
+                {receipt.date.slice(0, 10)} · {receipt.account?.name ?? "—"}{" "}
+                · {lines.length}{" "}
+                {lines.length === 1 ? "item" : "items"}
+              </span>
+            </div>
           </div>
-        </div>
+        </button>
+
         <div className={styles.headerActions}>
           <span className={styles.total}>
-            -{formatMoney(receipt.total, receipt.currency)}
+            -{formatMoney(
+              String(
+                lines.reduce((sum, l) => sum + Number(l.accountAmount), 0),
+              ),
+              lines[0]?.account?.currency ?? receipt.currency,
+            )}
           </span>
-          {open ? <HiChevronUp /> : <HiChevronDown />}
+          {receipt.currency !==
+            (lines[0]?.account?.currency ?? receipt.currency) && (
+            <span className={styles.converted}>
+              ({formatMoney(receipt.total, receipt.currency)})
+            </span>
+          )}
+          {(onEdit || onDelete) && (
+            <ActionsMenu
+              items={[
+                ...(onEdit
+                  ? [
+                      {
+                        label: "Editar",
+                        icon: <HiPencil />,
+                        onSelect: () => onEdit(receipt),
+                      },
+                    ]
+                  : []),
+                {
+                  label: "Eliminar",
+                  icon: <HiTrash />,
+                  onSelect: () => onDelete?.(receipt.id),
+                  danger: true,
+                },
+              ]}
+            />
+          )}
         </div>
-      </button>
+      </div>
 
       {open && (
         <div className={styles.lines}>
@@ -55,16 +98,16 @@ export default function TicketRow({ receipt, lines }: TicketRowProps) {
               </div>
               <div className={styles.lineActions}>
                 <span className={styles.expenseAmount}>
-                  -{formatMoney(line.amount, line.currency)}
+                  -{formatMoney(
+                    line.accountAmount,
+                    line.account?.currency ?? line.currency,
+                  )}
                 </span>
                 {line.exchangeRate !== "1" && (
                   <span className={styles.converted}>
-                    →{" "}
-                    {formatMoney(
-                      line.accountAmount,
-                      line.account?.currency ?? line.currency,
-                    )}{" "}
-                    @ {line.exchangeRate}
+                    (
+                    {formatMoney(line.amount, line.currency)} @{" "}
+                    {line.exchangeRate})
                   </span>
                 )}
               </div>

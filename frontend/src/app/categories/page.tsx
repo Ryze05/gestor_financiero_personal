@@ -11,6 +11,7 @@ import SkeletonList from "@/components/SkeletonList";
 import StatusFilter, {
   type StatusFilterValue,
 } from "@/components/StatusFilter";
+import Spinner from "@/components/Spinner";
 import { api, ApiError } from "@/lib/api/client";
 import type { Category, CategoryType } from "@/lib/api/types";
 import styles from "./categories.module.css";
@@ -182,6 +183,7 @@ export default function CategoriesPage() {
               className={styles.primaryButton}
               aria-disabled={submitting}
             >
+              {submitting && <Spinner />}
               {submitting ? "Creando..." : "Crear categoría"}
             </button>
           </form>

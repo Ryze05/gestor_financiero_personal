@@ -3,16 +3,19 @@ import type {
   Activity,
   ActivityQuery,
   Category,
+  CreateReceiptInput,
   CreateTransactionInput,
   CreateTransferInput,
   Currency,
   DashboardSummary,
   ExchangeRate,
   Paginated,
+  Receipt,
   Transaction,
   TransactionQuery,
   Transfer,
   TransferQuery,
+  UpdateReceiptInput,
   UpdateTransactionInput,
   UpdateTransferInput,
 } from "./types";
@@ -149,4 +152,24 @@ export const api = {
 
   deleteTransfer: (id: string) =>
     request<void>(`/transfers/${id}`, { method: "DELETE" }),
+
+  //----------------------------------------------------------------------------
+
+  listReceipts: (query?: { page?: number; limit?: number }) =>
+    request<Paginated<Receipt>>(`/receipts${params(query ?? {})}`),
+
+  createReceipt: (body: CreateReceiptInput) =>
+    request<{ receipt: Receipt; transactions: Transaction[] }>("/receipts", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  updateReceipt: (id: string, body: UpdateReceiptInput) =>
+    request<Receipt>(`/receipts/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  deleteReceipt: (id: string) =>
+    request<void>(`/receipts/${id}`, { method: "DELETE" }),
 };

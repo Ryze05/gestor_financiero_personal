@@ -9,6 +9,7 @@ import DatePicker from "@/components/DatePicker";
 import ActionsMenu from "@/components/ActionsMenu";
 import SkeletonList from "@/components/SkeletonList";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import Spinner from "@/components/Spinner";
 import { api, ApiError } from "@/lib/api/client";
 import { formatMoney } from "@/lib/utils/money";
 import { toApiDate } from "@/lib/utils/date";
@@ -117,9 +118,13 @@ export default function TransfersPage() {
     }
     if (!date) return setFormError("Selecciona una fecha.");
 
+    setSubmitting(true);
+    setFormError(null);
+
     if (sourceAccount) {
       const projected = Number(sourceAccount.currentBalance) - value;
       if (projected < 0) {
+        setSubmitting(false);
         setFundsWarning({ projected, currency: sourceAccount.currency });
         return;
       }
@@ -271,6 +276,7 @@ export default function TransfersPage() {
               className={styles.primaryButton}
               aria-disabled={submitting}
             >
+              {submitting && <Spinner />}
               {submitting
               ? editing
                 ? "Guardando..."

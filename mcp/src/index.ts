@@ -174,9 +174,12 @@ function createServer(): McpServer {
     'create_receipt',
     {
       description:
-        'Registra un ticket completo dividido en movimientos agrupados por categoría (Nivel 2). ' +
-        'REQUIERE confirmación humana ANTES de invocarlo. ' +
-        'externalId debe ser determinista (p.ej. ticket-20260925-001): si ya existe, devuelve el ticket sin duplicar.',
+        'Registra un ticket de compra con varias líneas. CADA LÍNEA es un ITEM individual ' +
+        'del ticket (un producto) con su concept corto (p.ej. "Pan", "Camiseta"), su importe ' +
+        'y su categoría. NO agrupes distintos productos en una sola línea ni metas la lista ' +
+        'de productos entre paréntesis en el concept. REQUIERE confirmación humana ANTES de ' +
+        'invocarlo. externalId debe ser determinista (p.ej. ticket-20260925-001): si ya existe, ' +
+        'devuelve el ticket sin duplicar.',
       inputSchema: z.object({
         externalId: z.string().min(3).max(160),
         merchant: z.string().max(150).optional(),
@@ -193,7 +196,7 @@ function createServer(): McpServer {
             }),
           )
           .min(1)
-          .describe('Movimientos agrupados por categoría'),
+          .describe('Cada línea es un item individual del ticket (un producto, con su concept corto, importe y categoría)'),
       }),
     },
     async (args) => {
