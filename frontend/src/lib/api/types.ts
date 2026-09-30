@@ -193,6 +193,7 @@ export interface DashboardSummary {
   expense: string;
   openingBalance: string;
   balance: string;
+  monthlyBalance: string;
   count: number;
   byCategory: DashboardByCategory[];
   timeline: DashboardTimelinePoint[];

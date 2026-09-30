@@ -51,7 +51,7 @@ describe('ReceiptsService', () => {
     externalId: 'ticket-001',
     merchant: 'Carrefour',
     date: '2026-09-25',
-    total: 19,
+    total: 9,
     currency: Currency.EUR,
     accountId: 'acc1',
     source: TransactionSource.OPENCLAW,
@@ -62,6 +62,14 @@ describe('ReceiptsService', () => {
   };
 
   describe('create', () => {
+    it('rechaza un total que no coincide con la suma de las líneas', async () => {
+      await expect(
+        service.create({ ...baseDto, total: 19 }),
+      ).rejects.toThrow('El total del ticket no coincide con la suma de sus líneas.');
+
+      expect(prisma.receipt.findUnique).not.toHaveBeenCalled();
+    });
+
     it('crea el receipt y una transacción por línea', async () => {
       prisma.receipt.findUnique.mockResolvedValue(null);
       prisma.account.findUnique.mockResolvedValue({
@@ -222,12 +230,31 @@ describe('ReceiptsService', () => {
       id: 'r1',
       accountId: 'acc1',
       currency: Currency.EUR,
+      total: new Prisma.Decimal(10),
       source: TransactionSource.WEB,
       date: new Date('2026-09-25'),
       transactions: [
         { id: 't1', amount: new Prisma.Decimal(10), currency: Currency.EUR },
       ],
     };
+
+    it('rechaza cambiar el total sin que coincida con las líneas existentes', async () => {
+      prisma.receipt.findUniqueOrThrow.mockResolvedValueOnce(currentReceipt);
+
+      await expect(
+        service.update('r1', { total: 11 }),
+      ).rejects.toThrow('El total del ticket no coincide con la suma de sus líneas.');
+    });
+
+    it('rechaza reemplazar las líneas si no coinciden con el total', async () => {
+      prisma.receipt.findUniqueOrThrow.mockResolvedValueOnce(currentReceipt);
+
+      await expect(
+        service.update('r1', {
+          lines: [{ amount: 2, concept: 'Pan', categoryId: 'catAli' }],
+        }),
+      ).rejects.toThrow('El total del ticket no coincide con la suma de sus líneas.');
+    });
 
     it('actualiza los metadatos sin tocar las líneas', async () => {
       prisma.receipt.findUniqueOrThrow
@@ -240,11 +267,11 @@ describe('ReceiptsService', () => {
       });
       tx.receipt.update.mockResolvedValue({ id: 'r1' });
 
-      await service.update('r1', { merchant: 'Alcampo', total: 20 });
+      await service.update('r1', { merchant: 'Alcampo' });
 
       expect(tx.receipt.update).toHaveBeenCalledWith({
         where: { id: 'r1' },
-        data: { merchant: 'Alcampo', total: new Prisma.Decimal(20) },
+        data: { merchant: 'Alcampo' },
       });
       expect(tx.transaction.deleteMany).not.toHaveBeenCalled();
       expect(tx.transaction.update).not.toHaveBeenCalled();
@@ -269,6 +296,7 @@ describe('ReceiptsService', () => {
       tx.transaction.create.mockResolvedValue({ id: 'tNew' });
 
       await service.update('r1', {
+        total: 2,
         lines: [{ amount: 2, concept: 'Pan', categoryId: 'catAli' }],
       });
 
