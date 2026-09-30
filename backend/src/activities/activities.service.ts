@@ -23,7 +23,39 @@ export type Activity =
   | {
       type: 'TRANSACTION';
       transaction: TransactionWithRelations;
-    };
+  };
+
+function matchesLineFilters(
+  transaction: TransactionWithRelations,
+  filters: {
+    categoryId?: string;
+    type?: string;
+    minAmount?: number;
+    maxAmount?: number;
+    search?: string;
+  },
+) {
+  if (filters.categoryId && transaction.categoryId !== filters.categoryId) {
+    return false;
+  }
+  if (filters.type && transaction.type !== filters.type) return false;
+
+  const amount = Number(transaction.accountAmount);
+  if (filters.minAmount !== undefined && amount < filters.minAmount) {
+    return false;
+  }
+  if (filters.maxAmount !== undefined && amount > filters.maxAmount) {
+    return false;
+  }
+  if (
+    filters.search &&
+    !transaction.concept.toLowerCase().includes(filters.search.toLowerCase())
+  ) {
+    return false;
+  }
+
+  return true;
+}
 
 @Injectable()
 export class ActivitiesService {
@@ -71,25 +103,30 @@ export class ActivitiesService {
 
     let receipts: ReceiptWithTransactions[] = [];
     if (type !== 'INCOME') {
+      const lineWhere: Prisma.TransactionWhereInput = {
+        ...(categoryId && { categoryId }),
+        ...(type && { type }),
+        ...(Object.keys(amountFilter).length
+          ? { accountAmount: amountFilter }
+          : {}),
+      };
+      const conceptWhere: Prisma.TransactionWhereInput = {
+        ...lineWhere,
+        ...(search && {
+          concept: { contains: search, mode: 'insensitive' },
+        }),
+      };
+
       receipts = await this.prisma.receipt.findMany({
         where: {
           ...(accountId && { accountId }),
           ...(source && { source }),
           ...dateFilter,
-          ...(Object.keys(amountFilter).length
-            ? { total: amountFilter }
-            : {}),
-          ...(categoryId && { transactions: { some: { categoryId } } }),
+          transactions: { some: lineWhere },
           ...(search && {
             OR: [
               { merchant: { contains: search, mode: 'insensitive' } },
-              {
-                transactions: {
-                  some: {
-                    concept: { contains: search, mode: 'insensitive' },
-                  },
-                },
-              },
+              { transactions: { some: conceptWhere } },
             ],
           }),
         },
@@ -122,11 +159,27 @@ export class ActivitiesService {
     }
 
     const activities: Activity[] = [
-      ...receipts.map((receipt) => ({
-        type: 'RECEIPT' as const,
-        receipt,
-        transactions: receipt.transactions,
-      })),
+      ...receipts.map((receipt) => {
+        const merchantMatches = Boolean(
+          search &&
+            receipt.merchant?.toLowerCase().includes(search.toLowerCase()),
+        );
+        const filters = {
+          categoryId,
+          type,
+          minAmount,
+          maxAmount,
+          ...(merchantMatches ? {} : { search }),
+        };
+
+        return {
+          type: 'RECEIPT' as const,
+          receipt,
+          transactions: receipt.transactions.filter((transaction) =>
+            matchesLineFilters(transaction, filters),
+          ),
+        };
+      }),
       ...transactions.map((transaction) => ({
         type: 'TRANSACTION' as const,
         transaction,

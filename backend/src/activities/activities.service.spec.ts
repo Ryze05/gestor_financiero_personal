@@ -107,7 +107,7 @@ describe('ActivitiesService', () => {
     expect(result.total).toBe(3);
   });
 
-  it('aplica minAmount/maxAmount sobre el total del ticket', async () => {
+  it('aplica minAmount/maxAmount sobre las líneas del ticket', async () => {
     prisma.receipt.findMany.mockResolvedValue([]);
     prisma.transaction.findMany.mockResolvedValue([]);
 
@@ -116,7 +116,14 @@ describe('ActivitiesService', () => {
     expect(prisma.receipt.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({
-          total: { gte: expect.any(Object), lte: expect.any(Object) },
+          transactions: {
+            some: {
+              accountAmount: {
+                gte: expect.any(Object),
+                lte: expect.any(Object),
+              },
+            },
+          },
         }),
       }),
     );
@@ -127,6 +134,43 @@ describe('ActivitiesService', () => {
         }),
       }),
     );
+  });
+
+  it('devuelve solo las líneas que coinciden con el filtro', async () => {
+    prisma.receipt.findMany.mockResolvedValue([
+      {
+        merchant: 'Supermercado',
+        date: new Date('2026-09-20'),
+        createdAt: new Date('2026-09-20T08:00:00Z'),
+        transactions: [
+          {
+            id: 'tech',
+            concept: 'Teclado',
+            categoryId: 'technology',
+            type: 'EXPENSE',
+            accountAmount: '30',
+          },
+          {
+            id: 'food',
+            concept: 'Pan',
+            categoryId: 'food',
+            type: 'EXPENSE',
+            accountAmount: '3',
+          },
+        ],
+      },
+    ]);
+    prisma.transaction.findMany.mockResolvedValue([]);
+
+    const result = await service.findAll({
+      ...baseQuery,
+      categoryId: 'technology',
+    });
+
+    expect(result.data[0].type).toBe('RECEIPT');
+    expect(result.data[0].transactions.map((line) => line.id)).toEqual([
+      'tech',
+    ]);
   });
 
   it('aplica from/to sobre la fecha', async () => {
