@@ -72,24 +72,14 @@ async function main() {
   // Movimientos de ejemplo (agosto y septiembre 2026)
   const txs = [
     // Cuenta principal (EUR)
-    { type: 'INCOME', amount: '1450.00', concept: 'Nómina agosto', date: '2026-08-01', category: 'Salario', account: principal },
-    { type: 'INCOME', amount: '1500.00', concept: 'Nómina septiembre', date: '2026-09-01', category: 'Salario', account: principal },
+    { type: 'INCOME', amount: '1500.00', concept: 'Nómina', date: '2026-09-01', category: 'Salario', account: principal },
     { type: 'INCOME', amount: '250.00', concept: 'Proyecto freelance', date: '2026-09-15', category: 'Freelance', account: principal },
     { type: 'EXPENSE', amount: '650.00', concept: 'Alquiler', date: '2026-09-01', category: 'Alquiler / Hipoteca', account: principal },
-    { type: 'EXPENSE', amount: '56.30', concept: 'Supermercado', date: '2026-09-02', category: 'Alimentación', account: principal },
-    { type: 'EXPENSE', amount: '62.10', concept: 'Supermercado', date: '2026-09-06', category: 'Alimentación', account: principal },
-    { type: 'EXPENSE', amount: '24.50', concept: 'Cena con amigos', date: '2026-09-05', category: 'Restaurantes y bares', account: principal },
-    { type: 'EXPENSE', amount: '45.00', concept: 'Repostaje coche', date: '2026-09-08', category: 'Combustible', account: principal },
-    { type: 'EXPENSE', amount: '12.99', concept: 'Suscripción streaming', date: '2026-09-10', category: 'Suscripciones', account: principal },
-    { type: 'EXPENSE', amount: '9.99', concept: 'Suscripción música', date: '2026-09-12', category: 'Suscripciones', account: principal },
-    { type: 'EXPENSE', amount: '18.40', concept: 'Metro y bus', date: '2026-09-15', category: 'Transporte', account: principal },
-    { type: 'EXPENSE', amount: '48.75', concept: 'Cena restaurante', date: '2026-09-18', category: 'Restaurantes y bares', account: principal },
+    { type: 'EXPENSE', amount: '56.30', concept: 'Supermercado', date: '2026-09-06', category: 'Alimentación', account: principal },
     { type: 'EXPENSE', amount: '35.00', concept: 'Ocio / cine', date: '2026-09-20', category: 'Ocio', account: principal },
-    { type: 'EXPENSE', amount: '89.90', concept: 'Luz y agua', date: '2026-09-22', category: 'Suministros', account: principal },
     // Revolut (USD)
     { type: 'INCOME', amount: '140.00', concept: 'Ventas online', date: '2026-09-05', category: 'Ventas', account: revolut },
     { type: 'EXPENSE', amount: '89.99', concept: 'Compra online', date: '2026-09-12', category: 'Tecnología', account: revolut },
-    { type: 'EXPENSE', amount: '15.99', concept: 'Suscripción USD', date: '2026-09-14', category: 'Suscripciones', account: revolut },
   ] as const;
 
   for (const t of txs) {
