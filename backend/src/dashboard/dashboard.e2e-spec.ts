@@ -149,6 +149,7 @@ describe('Dashboard (e2e)', () => {
     expect(res.body.income).toBe('100');
     expect(res.body.expense).toBe('40');
     expect(res.body.balance).toBe('60');
+    expect(res.body.monthlyBalance).toBe('60');
     expect(res.body.count).toBe(2);
     expect(res.body.byCategory).toContainEqual({
       categoryId: expenseCategoryId,
@@ -209,6 +210,7 @@ describe('Dashboard (e2e)', () => {
     expect(res.body.currency).toBe('EUR');
     expect(res.body.expense).toBe('21.52');
     expect(res.body.balance).toBe('-21.52');
+    expect(res.body.monthlyBalance).toBe('-21.52');
     expect(res.body.count).toBe(1);
     expect(res.body.timeline).toHaveLength(30);
     expect(

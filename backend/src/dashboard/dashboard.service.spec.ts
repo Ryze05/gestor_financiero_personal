@@ -59,6 +59,7 @@ describe('DashboardService', () => {
       expense: '0',
       openingBalance: '0',
       balance: '0',
+      monthlyBalance: '0',
       count: 0,
       byCategory: [],
       timeline: [],
@@ -82,6 +83,7 @@ describe('DashboardService', () => {
     expect(result.income).toBe('1500');
     expect(result.expense).toBe('500');
     expect(result.balance).toBe('2000');
+    expect(result.monthlyBalance).toBe('1000');
     expect(result.count).toBe(7);
   });
 
@@ -99,6 +101,7 @@ describe('DashboardService', () => {
     const result = await service.get({ accountId: ACC });
 
     expect(result.balance).toBe('-150');
+    expect(result.monthlyBalance).toBe('-150');
     expect(result.count).toBe(4);
   });
 

@@ -282,8 +282,13 @@ export default function Home() {
             </span>
           </Card>
 
-          <Card className={styles.count} title="Movimientos del mes">
-            <span className={styles.value}>{data.count}</span>
+          <Card className={styles.balance} title="Balance del mes">
+            <span
+              className={`${styles.value} ${Number(data.monthlyBalance) >= 0 ? styles.valuePositive : styles.valueNegative}`}
+            >
+              {Number(data.monthlyBalance) > 0 ? "+" : ""}
+              {money(data.monthlyBalance, data.currency)}
+            </span>
           </Card>
 
           <Card className={styles.accumulated} title="Balance acumulado">

@@ -140,7 +140,7 @@
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   grid-template-areas:
-    "income income income income expense expense expense expense count count count count"
+    "income income income income expense expense expense expense balance balance balance balance"
     "accumulated accumulated accumulated accumulated accumulated accumulated category category category category category category"
     "timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline";
   gap: 16px;
@@ -158,12 +158,19 @@
   grid-area: expense;
 }
 
-.count {
-  grid-area: count;
+.balance {
+  grid-area: balance;
 }
 
 .accumulated {
   grid-area: accumulated;
+  min-height: 340px;
+}
+
+.accumulated > div {
+  flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .timeline {
@@ -199,7 +206,7 @@
 @media (max-width: 1023px) {
   .grid {
     grid-template-areas:
-      "income income income income expense expense expense expense count count count count"
+      "income income income income expense expense expense expense balance balance balance balance"
       "accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated accumulated"
       "category category category category category category category category category category category category"
       "timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline timeline";
@@ -212,7 +219,7 @@
     grid-template-areas:
       "income"
       "expense"
-      "count"
+      "balance"
       "accumulated"
       "category"
       "timeline";

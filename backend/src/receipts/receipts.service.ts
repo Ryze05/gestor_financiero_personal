@@ -17,6 +17,16 @@ export class ReceiptsService {
   ) {}
 
   async create(dto: CreateReceiptDto) {
+    const linesTotal = dto.lines.reduce(
+      (total, line) => total.plus(new Prisma.Decimal(line.amount)),
+      new Prisma.Decimal(0),
+    );
+    if (!linesTotal.equals(new Prisma.Decimal(dto.total))) {
+      throw new BadRequestException(
+        'El total del ticket no coincide con la suma de sus líneas.',
+      );
+    }
+
     const existing = await this.prisma.receipt.findUnique({
       where: { externalId: dto.externalId },
       include: { transactions: { include: { account: true, category: true } } },
@@ -103,6 +113,21 @@ export class ReceiptsService {
       where: { id },
       include: { transactions: true },
     });
+
+    if (dto.lines || dto.total !== undefined) {
+      const expectedTotal = new Prisma.Decimal(
+        dto.total ?? current.total,
+      );
+      const linesTotal = (dto.lines ?? current.transactions).reduce(
+        (total, line) => total.plus(new Prisma.Decimal(line.amount)),
+        new Prisma.Decimal(0),
+      );
+      if (!linesTotal.equals(expectedTotal)) {
+        throw new BadRequestException(
+          'El total del ticket no coincide con la suma de sus líneas.',
+        );
+      }
+    }
 
     const accountId = dto.accountId ?? current.accountId;
     const currency = dto.currency ?? current.currency;
