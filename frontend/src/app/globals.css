@@ -4,14 +4,14 @@
   --surface: #ffffff;
   --foreground: #1c1a2e;
   --text-secondary: #5f5b73;
-  --border: #e1e0f0;
-  --primary: #b6bbf0;
-  --primary-hover: #a4aaea;
-  --accent: #b3c6f2;
-  --accent-hover: #a1b6ee;
+  --border: #d7d6e7;
+  --primary: #9b9bd8;
+  --primary-hover: #8b8bc9;
+  --accent: #718bcf;
+  --accent-hover: #5f78c0;
   --input-bg: #f5f5fb;
   --positive: #5563ac;
-  --negative: #b2607f;
+  --negative: #a65375;
 
   --font-sans: var(--font-inter), Arial, sans-serif;
   --font-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, monospace;
