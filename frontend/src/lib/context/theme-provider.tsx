@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useState, type ReactNode } from "react";
 import { ThemeContext, type Theme } from "./theme-context";
 
 function getInitialTheme(): Theme {
-  if (typeof window === "undefined") return "dark";
   const stored = localStorage.getItem("theme");
   if (stored === "light" || stored === "dark") return stored;
   return window.matchMedia("(prefers-color-scheme: light)").matches
@@ -13,7 +12,13 @@ function getInitialTheme(): Theme {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
+  const [theme, setTheme] = useState<Theme>("dark");
+
+  useEffect(() => {
+    startTransition(() => {
+      setTheme(getInitialTheme());
+    });
+  }, []);
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
