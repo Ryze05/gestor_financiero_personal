@@ -77,6 +77,7 @@ finanzas_personales/
 │   │   └── main.ts
 │   ├── test/
 │   ├── .env                 (local, no versionado)
+│   ├── .env.example         (versionado)
 │   └── package.json
 ├── frontend/
 │   ├── src/
@@ -84,7 +85,8 @@ finanzas_personales/
 │   │   ├── components/
 │   │   ├── lib/
 │   │   └── types/
-│   ├── .env.local           (local, no versionado)
+│   ├── .env                 (local, no versionado)
+│   ├── .env.example         (versionado)
 │   └── package.json
 ├── mcp/
 │   ├── src/

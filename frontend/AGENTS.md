@@ -9,7 +9,7 @@
 - Icons: `react-icons/hi2` (Heroicons v2). Nav items use the filled/outline pair pattern (`HiXxx` when active, `HiOutlineXxx` otherwise).
 - Typography via `next/font/google`: Space Grotesk (headings/brand), Inter (body), JetBrains Mono (money/numbers). Exposed as `--font-space-grotesk`, `--font-inter`, `--font-jetbrains-mono` and set on `<body>` (not `<html>`, to avoid a Turbopack dev hydration mismatch).
 - Consume the NestJS API; do not connect directly to PostgreSQL.
-- API base URL from `NEXT_PUBLIC_API_URL` in `frontend/.env.local` (default `http://localhost:3001/api/v1`).
+- API base URL from `NEXT_PUBLIC_API_URL` in `frontend/.env` (default `http://localhost:3001/api/v1`). Copy `frontend/.env.example`.
 
 ## Theming
 

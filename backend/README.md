@@ -1,124 +1,141 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Backend — Finanzas Personales
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST en NestJS y persistencia con Prisma 7 sobre PostgreSQL. Es la única capa autorizada para aplicar reglas de negocio y escribir en la base de datos; ni el frontend ni el servidor MCP acceden directamente a PostgreSQL.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Stack
 
-## Description
+- NestJS 12 con TypeScript.
+- Prisma 7 (`prisma-client`) + `@prisma/adapter-pg`.
+- PostgreSQL 16.
+- `class-validator` / `class-transformer` para DTOs.
+- Swagger para la documentación OpenAPI.
+- Vitest y Supertest para tests.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Requisitos
 
-## Project setup
+- Node.js LTS y `pnpm`.
+- PostgreSQL en marcha (`docker compose up -d` desde la raíz).
 
-```bash
-$ pnpm install
+## Configuración
+
+Copia `backend/.env.example` a `backend/.env` (no versionado). Es necesario para Prisma y NestJS:
+
+```env
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=finanzas
+DB_USER=finanzas
+DB_PASSWORD=finanzas_dev
+DATABASE_URL="postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}"
+PORT=3001
 ```
 
-## Compile and run the project
+`prisma7.config.ts` carga el archivo con `dotenv` + `dotenv-expand`; NestJS valida las variables mediante `src/config/env.validation.ts`.
+
+## Puesta en marcha
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm install
+pnpm prisma migrate dev
+pnpm prisma generate
+pnpm prisma db seed
+pnpm start:dev
 ```
 
-## Run tests
+- API: `http://localhost:3001/api/v1`
+- Swagger UI: `http://localhost:3001/docs`
+- OpenAPI JSON: `http://localhost:3001/docs-json`
+
+## Comandos
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm start:dev        # API en modo watch
+pnpm build            # Compilar
+pnpm start:prod       # Ejecutar el build
+pnpm run lint         # oxlint (no ESLint)
+pnpm test             # Tests unitarios (Vitest)
+pnpm test -- path/to/file.spec.ts
+pnpm test:e2e         # Tests e2e (base de datos de desarrollo real)
+pnpm test:cov         # Cobertura
+pnpm prisma validate
+pnpm prisma db seed
 ```
 
-## Deployment
+## Prisma
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+- `prisma/schema.prisma` es la fuente de verdad.
+- El generador `prisma-client` escribe en `../src/generated/prisma` (gitignoreado). Se importa desde `src/prisma/prisma.service.ts` como `../generated/prisma/client.js` y desde `prisma/seed.ts` como `../src/generated/prisma/client.js`.
+- Prisma 7 exige un driver adapter: `new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) })`.
+- Usa migraciones para los cambios de esquema; no edites tablas a mano en pgAdmin ni uses `db push` en desarrollo.
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Tras cambiar `schema.prisma`:
 
 ```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
+pnpm prisma validate
+pnpm prisma migrate dev --name <nombre_descriptivo>
+pnpm prisma generate
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Seed
 
-## Observability
+`prisma/seed.ts` (ejecutado por `tsx`) es idempotente y crea dos cuentas (`Cuenta principal` en EUR y `Revolut` en USD) y el catálogo base de categorías de gasto, ingreso y `BOTH`. Se ejecuta con `pnpm prisma db seed`.
 
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
+## Módulos
 
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
+| Módulo | Responsabilidad |
+|---|---|
+| `health` | `GET /health` |
+| `categories` | CRUD + archivar/restaurar y paginación |
+| `accounts` | CRUD + archivar/restaurar; expone `currentBalance` |
+| `transactions` | CRUD, filtros, paginación, idempotencia por `externalId` y borrado real |
+| `transfers` | Alta/listado/edición/borrado atómico de transferencias y sus movimientos vinculados |
+| `receipts` | Tickets (Nivel 2): alta atómica e idempotente de un `Receipt` con sus movimientos |
+| `activities` | Vista de usuario: tickets agrupados y movimientos sueltos, paginada por compras |
+| `dashboard` | Resumen por periodo y cuenta (`income`, `expense`, `balance`, `byCategory`, `timeline`) |
+| `exchange-rate` | `GET /exchange/rate`; conversión EUR/USD en el backend |
+| `prisma` | `PrismaService` / `PrismaModule` globales |
+| `common` | `PaginationQueryDto`, filtros, transformaciones y `PrismaExceptionFilter` |
+| `config` | Validación de variables de entorno |
 
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
+## API
 
-To add it to this project:
+Prefijo global `/api/v1`:
 
-```bash
-$ pnpm install @nestjs/observe
-```
+- `GET /health`
+- `GET|POST /transactions`, `GET|PATCH|DELETE /transactions/:id`
+- `GET|POST /transfers`, `GET|GET :id|DELETE :id`
+- `GET|POST /receipts`, `GET /receipts/:id`, `DELETE /receipts/:id`
+- `GET /activities`
+- `GET|POST /categories`, `GET|PATCH|DELETE /categories/:id`, `PATCH /categories/:id/restore`
+- `GET|POST /accounts`, `GET|PATCH|DELETE /accounts/:id`, `PATCH /accounts/:id/restore`
+- `GET /dashboard?accountId=&from=&to=`
+- `GET /exchange/rate`
 
-Then follow the [setup guide](https://docs.nestjs.com/observability/overview) - it takes a single import and an app key.
+Detalles de contratos, campos y códigos de error en `../docs/architecture.md`.
 
-The free plan needs no payment details and covers 300,000 events a month. You can also browse the [live demo](https://www.observe-demo.nestjs.com/dashboard) first - the whole dashboard over a busy service's data, with nothing to install.
+### Convenciones
 
-## Resources
+- `setupApp` (`src/app.setup.ts`) centraliza el prefijo `/api/v1`, el `ValidationPipe` global (`whitelist`, `forbidNonWhitelisted`, `transform`, conversión implícita), CORS para `http://localhost:3000`, el `PrismaExceptionFilter` y Swagger.
+- Los listados son paginados con `PaginationQueryDto` y devuelven `{ data, total, page, limit }`.
+- `PrismaExceptionFilter` traduce `P2025` → 404, `P2002` → 409 y cualquier otro error → 500.
+- Los valores monetarios usan `Decimal` de Prisma, nunca `number` de JavaScript, y se serializan como string.
+- Los `:id` se validan con `ParseUUIDPipe` (400 si el formato es inválido).
+- `source` es `WEB` u `OPENCLAW`; `externalId` da idempotencia a las operaciones de OpenClaw.
 
-Check out a few resources that may come in handy when working with NestJS:
+## Reglas de dominio
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observe](https://observe.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+- La moneda de un movimiento puede diferir de la de su cuenta: se conservan `amount`/`currency` originales y se calculan `accountAmount` y `exchangeRate`.
+- Las transferencias tienen entidad propia y generan dos movimientos vinculados (salida/entrada) de forma atómica; cuentan como gasto/ingreso en saldos y dashboard.
+- Borrar una transferencia elimina en cascada sus dos movimientos; editarla (`PATCH`) actualiza transferencia y movimientos atómicamente.
+- Un `Receipt` agrupa líneas por categoría; no altera saldos ni dashboard.
+- El backend permite saldos negativos (el frontend avisa).
 
-## Support
+## Tests
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- Unitarios: `*.spec.ts`. E2E: `*.e2e-spec.ts`.
+- Los e2e usan la base de datos de desarrollo real, desactivan el paralelismo de archivos y limpian las filas que crean en `afterAll`.
+- Al terminar un cambio: tests focalizados, `pnpm prisma validate` (si toca Prisma), `pnpm build` y lint cuando aplique.
 
-## Stay in touch
+## Convenciones adicionales
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Ver `AGENTS.md` en este directorio para las convenciones de trabajo del paquete.
